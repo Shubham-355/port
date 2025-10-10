@@ -1,7 +1,7 @@
 'use client';
 
-import { Github, Linkedin, Mail, Twitter, ExternalLink, Code, Edit, Folder, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Home as HomeIcon, User, Briefcase, FileText } from 'lucide-react'
+import { Github, Linkedin, Mail, ExternalLink, Code, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home as HomeIcon, User, Briefcase } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState, useRef } from 'react';
 import { LucideIcon } from "lucide-react"
@@ -10,14 +10,6 @@ interface SocialLink {
   title: string;
   icon: LucideIcon;
   href: string;
-}
-
-interface MainProject {
-  title: string;
-  description: string;
-  tech: string[];
-  liveUrl: string;
-  githubUrl: string;
 }
 
 interface SliderProject {
@@ -86,29 +78,6 @@ const parseSocialLinks = (): SocialLink[] => {
   }).filter(link => link.href);
 };
 
-const parseMainProjects = (): MainProject[] => {
-  const mainProjectsEnv = process.env.NEXT_PUBLIC_MAIN_PROJECTS || '';
-  if (!mainProjectsEnv) return [];
-
-  return mainProjectsEnv.split(',').map(project => {
-    const parts = project.split(':');
-    const title = parts[0] || '';
-    const description = parts[1] || '';
-    const techString = parts[2] || '';
-    const tech = techString ? techString.split(',').map(t => t.trim()) : [];
-    const liveUrl = parts[3] || '';
-    const githubUrl = parts[4] || '';
-
-    return {
-      title,
-      description,
-      tech,
-      liveUrl,
-      githubUrl
-    };
-  }).filter(project => project.title && project.description);
-};
-
 const parseSliderProjects = (): SliderProject[] => {
   const sliderProjectsEnv = process.env.NEXT_PUBLIC_SLIDER_PROJECTS || '';
   if (!sliderProjectsEnv) return [];
@@ -136,7 +105,6 @@ const parseSmallProjects = (): SmallProject[] => {
     
     const parts = [];
     let currentPart = '';
-    let colonCount = 0;
     
     for (let i = 0; i < trimmedProject.length; i++) {
       const char = trimmedProject[i];
@@ -153,7 +121,6 @@ const parseSmallProjects = (): SmallProject[] => {
           // This is a field separator
           parts.push(currentPart);
           currentPart = '';
-          colonCount++;
         }
       } else {
         currentPart += char;
@@ -212,12 +179,6 @@ const getPersonalInfo = () => ({
   resumeUrl: process.env.NEXT_PUBLIC_RESUME_URL || '#'
 });
 
-interface NavItem {
-  name: string
-  url: string
-  icon: LucideIcon
-}
-
 interface Tab {
   title: string;
   icon: LucideIcon;
@@ -231,13 +192,6 @@ interface Separator {
 }
 
 type TabItem = Tab | Separator;
-
-interface ExpandableTabsProps {
-  tabs: TabItem[];
-  className?: string;
-  activeColor?: string;
-  onChange?: (index: number | null) => void;
-}
 
 const useScrollPosition = () => {
   const [scrollY, setScrollY] = useState(0);
@@ -291,31 +245,10 @@ const CodingAnimation = () => {
   const [displayedLines, setDisplayedLines] = useState<string[]>([]);
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
   const [currentCharIndex, setCurrentCharIndex] = useState(0);
-  const [isTyping, setIsTyping] = useState(false); // Start as false
-  const [hasAnimated, setHasAnimated] = useState(false); // Track if animation has played
+  const [isTyping, setIsTyping] = useState(false);
+  const [hasAnimated, setHasAnimated] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  
-  const [floatingElements] = useState(() => {
-    if (typeof window === 'undefined') return [];
-    return Array.from({ length: 6 }, (_, i) => ({
-      id: i,
-      initialX: Math.random() * 300,
-      initialY: Math.random() * 300,
-      targetX: Math.random() * 300,
-      targetY: Math.random() * 300,
-      symbol: ['{}', '[]', '()', '==', '=>', '&&'][i]
-    }));
-  });
-
-  const [particles] = useState(() => {
-    if (typeof window === 'undefined') return [];
-    return Array.from({ length: 12 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 320,
-      delay: i * 0.3
-    }));
-  });
 
   useEffect(() => {
     setIsClient(true);
@@ -325,54 +258,54 @@ const CodingAnimation = () => {
   useEffect(() => {
     if (!isClient || hasAnimated) return;
 
+    const container = containerRef.current;
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting && !hasAnimated) {
-            // Start typing animation when component comes into view
             setIsTyping(true);
             setHasAnimated(true);
           }
         });
       },
       {
-        threshold: 0.3, // Trigger when 30% of the component is visible
+        threshold: 0.3,
         rootMargin: '0px'
       }
     );
 
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
+    if (container) {
+      observer.observe(container);
     }
 
     return () => {
-      if (containerRef.current) {
-        observer.unobserve(containerRef.current);
+      if (container) {
+        observer.unobserve(container);
       }
     };
   }, [isClient, hasAnimated]);
 
-  // Get personal info for dynamic code snippets
   const personalInfo = getPersonalInfo();
   const skillsArray = personalInfo.skills.split(',').map(s => s.trim()).filter(Boolean);
 
-  const codeSnippets = [
-    "const developer = {",
-    "  name: '" + personalInfo.name + "',",
-    "  skills: [",
-    "    '" + skillsArray.slice(0, 2).join("', '") + "',",
-    "  ]",
-    "};",
-    "",
-    "const funFacts = {",
-    "  hackathons: 'Always excited ⚡',",
-    "  community: 'Love collaborating 🤝',",
-    "  passion: 'Building cool stuff! 🚀'",
-    "};",
-  ];
-
+  // Move codeSnippets inside useEffect to fix the dependency warning
   useEffect(() => {
     if (!isTyping) return;
+
+    const codeSnippets = [
+      "const developer = {",
+      "  name: '" + personalInfo.name + "',",
+      "  skills: [",
+      "    '" + skillsArray.slice(0, 2).join("', '") + "',",
+      "  ]",
+      "};",
+      "",
+      "const funFacts = {",
+      "  hackathons: 'Always excited ⚡',",
+      "  community: 'Love collaborating 🤝',",
+      "  passion: 'Building cool stuff! 🚀'",
+      "};",
+    ];
 
     const currentLine = codeSnippets[currentLineIndex];
     
@@ -388,7 +321,7 @@ const CodingAnimation = () => {
           return newLines;
         });
         setCurrentCharIndex(prev => prev + 1);
-      }, 50); // Typing speed
+      }, 50);
 
       return () => clearTimeout(timer);
     } else if (currentLineIndex < codeSnippets.length - 1) {
@@ -396,14 +329,14 @@ const CodingAnimation = () => {
       const timer = setTimeout(() => {
         setCurrentLineIndex(prev => prev + 1);
         setCurrentCharIndex(0);
-      }, 300); // Pause between lines
+      }, 300);
 
       return () => clearTimeout(timer);
     } else {
-      // Animation complete - stop typing and keep the code displayed
+      // Animation complete
       setIsTyping(false);
     }
-  }, [currentLineIndex, currentCharIndex, isTyping, personalInfo.name, personalInfo.skills]);
+  }, [currentLineIndex, currentCharIndex, isTyping, personalInfo.name, skillsArray]);
 
   const getLineColor = (line: string) => {
     if (!line) return 'text-zinc-500';
@@ -553,244 +486,16 @@ function useOnClickOutside(ref: React.RefObject<HTMLElement | null>, handler: ()
   }, [ref, handler]);
 }
 
-const buttonVariants = {
-  initial: {
-    gap: 0,
-    paddingLeft: ".5rem",
-    paddingRight: ".5rem",
-  },
-  animate: (isSelected: boolean) => ({
-    gap: isSelected ? ".5rem" : 0,
-    paddingLeft: isSelected ? "1rem" : ".5rem",
-    paddingRight: isSelected ? "1rem" : ".5rem",
-  }),
-};
-
-const spanVariants = {
-  initial: { width: 0, opacity: 0 },
-  animate: { width: "auto", opacity: 1 },
-  exit: { width: 0, opacity: 0 },
-};
-
-const transition = { delay: 0.1, type: "spring" as const, bounce: 0, duration: 0.6 };
-
-const leftNavVariants = {
-  separate: { x: 0, scale: 1 },
-  approaching: { 
-    x: 50, 
-    scale: 1.05,
-    transition: { type: "spring" as const, stiffness: 300, damping: 25 }
-  },
-  colliding: { 
-    x: 100, 
-    scale: 0.95,
-    transition: { type: "spring" as const, stiffness: 400, damping: 20 }
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.8,
-    transition: { duration: 0.3 }
-  }
-};
-
-const rightNavVariants = {
-  separate: { x: 0, scale: 1 },
-  approaching: { 
-    x: -50, 
-    scale: 1.05,
-    transition: { type: "spring" as const, stiffness: 300, damping: 25 }
-  },
-  colliding: { 
-    x: -100, 
-    scale: 0.95,
-    transition: { type: "spring" as const, stiffness: 400, damping: 20 }
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.8,
-    transition: { duration: 0.3 }
-  }
-};
-
-const mergedNavVariants = {
-  hidden: { 
-    opacity: 0, 
-    scale: 0.8, 
-    y: -20
-  },
-  visible: { 
-    opacity: 1, 
-    scale: 1, 
-    y: 0,
-    transition: { 
-      type: "spring" as const, 
-      stiffness: 300, 
-      damping: 25,
-      delay: 0.2 
-    }
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.8,
-    y: -20,
-    transition: { duration: 0.2 }
-  }
-};
-
-function ExpandableTabs({
-  tabs,
-  className,
-  activeColor = "text-blue-400",
-  onChange,
-}: ExpandableTabsProps) {
-  const [selected, setSelected] = useState<number | null>(null);
-  const outsideClickRef = useRef<HTMLDivElement>(null);
-
-  useOnClickOutside(outsideClickRef, () => {
-    setSelected(null);
-    onChange?.(null);
-  });
-
-  const handleSelect = (index: number) => {
-    setSelected(index);
-    onChange?.(index);
-  };
-
-  const Separator = () => (
-    <div className="mx-1 h-[24px] w-[1.2px] bg-zinc-700" aria-hidden="true" />
-  );
-
-  return (
-    <div
-      ref={outsideClickRef}
-      className={cn(
-        "flex flex-wrap items-center gap-2 rounded-2xl border border-zinc-800 bg-black/20 backdrop-blur-lg p-1 shadow-sm",
-        className
-      )}
-    >
-      {tabs.map((tab, index) => {
-        if (tab.type === "separator") {
-          return <Separator key={`separator-${index}`} />;
-        }
-
-        const Icon = tab.icon;
-        return (
-          <motion.button
-            key={tab.title}
-            variants={buttonVariants}
-            initial={false}
-            animate="animate"
-            custom={selected === index}
-            onClick={() => handleSelect(index)}
-            transition={transition}
-            className={cn(
-              "relative flex items-center rounded-xl px-4 py-2 text-sm font-medium transition-colors duration-300",
-              selected === index
-                ? cn("bg-zinc-800/50", activeColor)
-                : "text-zinc-400 hover:bg-zinc-800/30 hover:text-white"
-            )}
-          >
-            <Icon size={20} />
-            <AnimatePresence initial={false}>
-              {selected === index && (
-                <motion.span
-                  variants={spanVariants}
-                  initial="initial"
-                  animate="animate"
-                  exit="exit"
-                  transition={transition}
-                  className="overflow-hidden whitespace-nowrap"
-                >
-                  {tab.title}
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.button>
-        );
-      })}
-    </div>
-  );
-}
-
-function ExpandableSocialLinks({
-  links,
-  className,
-}: {
-  links: Array<{ title: string; icon: LucideIcon; href: string }>;
-  className?: string;
-}) {
-  const [selected, setSelected] = useState<number | null>(null);
-  const outsideClickRef = useRef<HTMLDivElement>(null);
-
-  useOnClickOutside(outsideClickRef, () => {
-    setSelected(null);
-  });
-
-  const handleSelect = (index: number, href: string) => {
-    setSelected(index);
-    window.open(href, '_blank');
-  };
-
-  return (
-    <div
-      ref={outsideClickRef}
-      className={cn(
-        "flex flex-wrap items-center gap-2 rounded-2xl border border-zinc-800 bg-black/20 backdrop-blur-lg p-1 shadow-sm",
-        className
-      )}
-    >
-      {links.map((link, index) => {
-        const Icon = link.icon;
-        return (
-          <motion.button
-            key={link.title}
-            variants={buttonVariants}
-            initial={false}
-            animate="animate"
-            custom={selected === index}
-            onClick={() => handleSelect(index, link.href)}
-            transition={transition}
-            className={cn(
-              "relative flex items-center rounded-xl px-4 py-2 text-sm font-medium transition-colors duration-300",
-              selected === index
-                ? "bg-zinc-800/50 text-blue-400"
-                : "text-zinc-400 hover:bg-zinc-800/30 hover:text-white"
-            )}
-          >
-            <Icon size={20} />
-            <AnimatePresence initial={false}>
-              {selected === index && (
-                <motion.span
-                  variants={spanVariants}
-                  initial="initial"
-                  animate="animate"
-                  exit="exit"
-                  transition={transition}
-                  className="overflow-hidden whitespace-nowrap"
-                >
-                  {link.title}
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.button>
-        );
-      })}
-    </div>
-  );
-}
-
 function CollisionNavbar({
   tabs,
   socialLinks,
   onChange,
-  className = "",
 }: {
   tabs: TabItem[];
   socialLinks: Array<{ title: string; icon: LucideIcon; href: string }>;
   onChange?: (index: number | null) => void;
-  className?: string;
 }) {
-  const { progress, smoothProgress, elasticProgress, isCollapsed } = useScrollPosition();
+  const { progress } = useScrollPosition(); // Remove unused destructured variables
   const [selectedTab, setSelectedTab] = useState<number | null>(null);
   const [selectedSocial, setSelectedSocial] = useState<number | null>(null);
   const outsideClickRef = useRef<HTMLDivElement>(null);
@@ -837,38 +542,6 @@ function CollisionNavbar({
     }
   };
 
-  const getLeftNavTransform = () => {
-    const baseX = 0;
-    const targetX = window.innerWidth / 2 - 200; // Move towards center
-    const currentX = baseX + (targetX - baseX) * smoothProgress;
-    
-    const scale = 1 + (0.1 * elasticProgress); // Slight scaling effect
-    const rotation = smoothProgress * 2; // Slight rotation during movement
-    
-    return {
-      x: currentX,
-      scale,
-      rotate: rotation,
-      borderRadius: `${16 - 8 * smoothProgress}px ${16 + 8 * smoothProgress}px ${16 + 8 * smoothProgress}px ${16 - 8 * smoothProgress}px`,
-    };
-  };
-
-  const getRightNavTransform = () => {
-    const baseX = 0;
-    const targetX = -(window.innerWidth / 2 - 200); // Move towards center
-    const currentX = baseX + (targetX - baseX) * smoothProgress;
-    
-    const scale = 1 + (0.1 * elasticProgress);
-    const rotation = -smoothProgress * 2;
-    
-    return {
-      x: currentX,
-      scale,
-      rotate: rotation,
-      borderRadius: `${16 + 8 * smoothProgress}px ${16 - 8 * smoothProgress}px ${16 - 8 * smoothProgress}px ${16 + 8 * smoothProgress}px`,
-    };
-  };
-
   const getMergedOpacity = () => {
     // Start showing merged navbar when collision is almost complete
     return progress > 0.8 ? (progress - 0.8) / 0.2 : 0;
@@ -885,7 +558,6 @@ function CollisionNavbar({
       Math.max(0, 1 - ((progress - hideThreshold) / fadeRange)) : 1;
   };
 
-  // Advanced collision physics calculations
   const getAdvancedLeftTransform = () => {
     const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
     const baseX = 0;
@@ -941,7 +613,6 @@ function CollisionNavbar({
     };
   };
 
-  // Dynamic border radius for fluid morphing
   const getFluidBorderRadius = (isLeft: boolean) => {
     const base = 16;
     const deformation = progress * 12;
@@ -1635,39 +1306,13 @@ function AnimatedContainer({ className, delay = 0.1, children }: ViewAnimationPr
   );
 }
 
-export const useWindowSize = () => {
-  const [windowSize, setWindowSize] = useState({
-    width: typeof window !== 'undefined' ? window.innerWidth : 0,
-    height: typeof window !== 'undefined' ? window.innerHeight : 0,
-  });
-
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    };
-
-    window.addEventListener('resize', handleResize);
-    
-    handleResize();
-
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  return windowSize;
-};
-
 export default function Home() {
   const personalInfo = getPersonalInfo();
   const socialLinks = parseSocialLinks();
   const technologies = parseTechnologies();
-  const mainProjects = parseMainProjects();
   const sliderProjects = parseSliderProjects();
   const smallProjects = parseSmallProjects();
-  
-  const [activeSection, setActiveSection] = useState('intro');
+  // parseMainProjects is not used, but keeping it for potential future use
 
   const navTabs: TabItem[] = [
     { title: 'intro', icon: HomeIcon },
@@ -1689,30 +1334,8 @@ export default function Home() {
   const handleNavChange = (index: number | null) => {
     if (index !== null && navTabs[index]) {
       scrollToSection(index.toString());
-      setActiveSection(navTabs[index].title || '');
     }
   };
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const sections = ['intro', 'about', 'projects'];
-      const current = sections.find(section => {
-        const element = document.getElementById(section);
-        if (element) {
-          const rect = element.getBoundingClientRect();
-          return rect.top <= 100 && rect.bottom >= 100;
-        }
-        return false;
-      });
-      
-      if (current) {
-        setActiveSection(current);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   return (
     <div className="min-h-screen bg-black text-white">
