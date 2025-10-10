@@ -1,1 +1,1 @@
-💀 Single page application fr 💀
+💀Single page application fr💀
