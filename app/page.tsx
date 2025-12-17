@@ -71,8 +71,7 @@ const parseMainProjects = (): MainProject[] => {
     const title = parts[0]?.trim() || '';
     const link = parts[1]?.trim() || '';
     
-    // Generate thumbnail path from title (convert to lowercase and replace spaces)
-    const thumbnail = `/${title.toLowerCase().replace(/\s+/g, '')}.png`;
+    const thumbnail = `/${title.replace(/\s+/g, '')}.png`;
     
     return { title, thumbnail, link };
   }).filter(project => project.title && project.link);
