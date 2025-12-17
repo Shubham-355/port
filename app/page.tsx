@@ -1,528 +1,153 @@
 'use client';
 
-import { Github, Linkedin, Mail, ExternalLink, Code, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Home as HomeIcon, User, Briefcase } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState, useRef } from 'react';
-import { LucideIcon } from "lucide-react"
+import Image from 'next/image';
 
-interface SocialLink {
+interface MainProject {
   title: string;
-  icon: LucideIcon;
-  href: string;
-}
-
-interface SliderProject {
-  title: string;
-  description: string;
-  company: string;
-  year: string;
+  thumbnail: string;
   link: string;
 }
 
-interface SmallProject {
-  title: string;
-  description: string;
-  company: string;
-  year: string;
-  link: string;
-}
-
-const XIcon = ({ size = 20, className = "" }: { size?: number; className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    x="0px"
-    y="0px"
-    width={size}
-    height={size}
-    viewBox="0,0,256,256"
-    className={className}
-  >
-    <g fill="currentColor" fillRule="nonzero" stroke="none" strokeWidth="1" strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit="10" strokeDasharray="" strokeDashoffset="0" fontFamily="none" fontWeight="bold" fontSize="none" textAnchor="none" style={{ mixBlendMode: 'normal' }} opacity="1">
-      <g transform="scale(5.12,5.12)">
-        <path d="M5.91992,6l14.66211,21.375l-14.35156,16.625h3.17969l12.57617,-14.57812l10,14.57813h12.01367l-15.31836,-22.33008l13.51758,-15.66992h-3.16992l-11.75391,13.61719l-9.3418,-13.61719zM9.7168,8h7.16406l23.32227,34h-7.16406z" strokeWidth="1.5" stroke="currentColor"></path>
-      </g>
-    </g>
-  </svg>
-);
-
-const iconMap: Record<string, LucideIcon> = {
-  Github,
-  Linkedin, 
-  Twitter: XIcon as LucideIcon,
-  Mail,
-  github: Github,
-  linkedin: Linkedin,
-  twitter: XIcon as LucideIcon,
-  email: Mail,
-  mail: Mail
-};
-
-const parseSocialLinks = (): SocialLink[] => {
+const parseSocialLinks = () => {
   const socialLinksEnv = process.env.NEXT_PUBLIC_SOCIAL_LINKS || '';
-  if (!socialLinksEnv) return [];
+  if (!socialLinksEnv) return { github: '', linkedin: '', twitter: '', email: '' };
 
-  return socialLinksEnv.split(',').map(link => {
-    const parts = link.split(':');
-    const platform = parts[0]?.trim() || '';
-    // Reconstruct the URL by joining parts 1 onwards with ':'
-    const url = parts.slice(1, -1).join(':').trim();
-    const iconName = parts[parts.length - 1]?.trim() || '';
-    const iconKey = iconName || platform;
-    
-    return {
-      title: platform.charAt(0).toUpperCase() + platform.slice(1),
-      icon: iconMap[iconKey] || iconMap[platform] || Mail,
-      href: url
-    };
-  }).filter(link => link.href);
-};
-
-const parseSliderProjects = (): SliderProject[] => {
-  const sliderProjectsEnv = process.env.NEXT_PUBLIC_SLIDER_PROJECTS || '';
-  if (!sliderProjectsEnv) return [];
-
-  return sliderProjectsEnv.split(',').map(project => {
-    const parts = project.split('|');
-    const link = parts[4]?.trim() || '';
-    
-    return {
-      title: parts[0]?.trim() || '',
-      description: parts[1]?.trim() || '',
-      company: parts[2]?.trim() || '',
-      year: parts[3]?.trim() || '',
-      link: link
-    };
-  }).filter(project => project.title && project.description && project.link);
-};
-
-const parseSmallProjects = (): SmallProject[] => {
-  const smallProjectsEnv = process.env.NEXT_PUBLIC_SMALL_PROJECTS || '';
-  if (!smallProjectsEnv) return [];
-
-  return smallProjectsEnv.split(',').map(project => {
-    const trimmedProject = project.trim();
-    
-    const parts = [];
-    let currentPart = '';
-    
-    for (let i = 0; i < trimmedProject.length; i++) {
-      const char = trimmedProject[i];
-      
-      if (char === ':') {
-        // Check if this colon is part of http:// or https://
-        const beforeColon = trimmedProject.substring(Math.max(0, i - 5), i);
-        const afterColon = trimmedProject.substring(i, i + 3);
-        
-        if (beforeColon.includes('http') && afterColon === '://') {
-          // This is part of a protocol, include it in current part
-          currentPart += char;
-        } else {
-          // This is a field separator
-          parts.push(currentPart);
-          currentPart = '';
-        }
-      } else {
-        currentPart += char;
-      }
-    }
-    
-    // Add the last part
-    if (currentPart) {
-      parts.push(currentPart);
-    }
-    
-    // If we couldn't parse properly, try simple split and reconstruct URL
-    if (parts.length < 5) {
-      const simpleParts = trimmedProject.split(':');
-      if (simpleParts.length >= 5) {
-        // Reconstruct the URL from the parts that likely contain protocol
-        const title = simpleParts[0]?.trim() || '';
-        const description = simpleParts[1]?.trim() || '';
-        const company = simpleParts[2]?.trim() || '';
-        const year = simpleParts[3]?.trim() || '';
-        // Join the remaining parts to reconstruct the full URL
-        const urlParts = simpleParts.slice(4);
-        const link = urlParts.join(':').trim();
-        
-        return { title, description, company, year, link };
-      }
-    }
-    
-    return {
-      title: parts[0]?.trim() || '',
-      description: parts[1]?.trim() || '',
-      company: parts[2]?.trim() || '',
-      year: parts[3]?.trim() || '',
-      link: parts[4]?.trim() || ''
-    };
-  }).filter(project => project.title && project.description && project.link);
-};
-
-const parseTechnologies = (): string[] => {
-  const technologiesEnv = process.env.NEXT_PUBLIC_TECHNOLOGIES || '';
-  if (!technologiesEnv) return [];
+  const links = { github: '', linkedin: '', twitter: '', email: '' };
   
-  return technologiesEnv.split(',').map(tech => tech.trim());
+  socialLinksEnv.split(',').forEach(item => {
+    // Split only on the first colon to get platform and rest
+    const firstColonIndex = item.indexOf(':');
+    if (firstColonIndex === -1) return;
+    
+    const platform = item.substring(0, firstColonIndex).trim().toLowerCase();
+    const rest = item.substring(firstColonIndex + 1).trim();
+    
+    // For the URL part, split on the last colon to separate URL from label
+    const lastColonIndex = rest.lastIndexOf(':');
+    const url = lastColonIndex !== -1 ? rest.substring(0, lastColonIndex).trim() : rest;
+    
+    if (platform && url) {
+      if (platform === 'github') links.github = url;
+      if (platform === 'linkedin') links.linkedin = url;
+      if (platform === 'twitter') links.twitter = url;
+      if (platform === 'email') links.email = url;
+    }
+  });
+  
+  return links;
 };
 
 const getPersonalInfo = () => ({
   name: process.env.NEXT_PUBLIC_DEVELOPER_NAME || 'Developer',
   role: process.env.NEXT_PUBLIC_DEVELOPER_DESC || 'I create stuff sometimes.',
-  skills: process.env.NEXT_PUBLIC_DEVELOPER_SKILLS || 'Passionate Developer',
   email: process.env.NEXT_PUBLIC_EMAIL,
-  phone: process.env.NEXT_PUBLIC_PHONE || '',
-  location: process.env.NEXT_PUBLIC_LOCATION || '',
   aboutText: process.env.NEXT_PUBLIC_ABOUT_TEXT || 'Passionate developer creating amazing applications.',
   techHeaderText: process.env.NEXT_PUBLIC_TECH_HEADER_TEXT || 'Here are some technologies I have been working with:',
   additionalAboutText: process.env.NEXT_PUBLIC_ADDITIONAL_ABOUT_TEXT || '',
-  resumeUrl: process.env.NEXT_PUBLIC_RESUME_URL || '#'
 });
 
-interface Tab {
-  title: string;
-  icon: LucideIcon;
-  type?: never;
-}
-
-interface Separator {
-  type: "separator";
-  title?: never;
-  icon?: never;
-}
-
-type TabItem = Tab | Separator;
-
-const useScrollPosition = () => {
-  const [scrollY, setScrollY] = useState(0);
-  const [animationProgress, setAnimationProgress] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      setScrollY(currentScrollY);
-      
-      const startScroll = 50;
-      const endScroll = 350;
-      const progress = Math.min(Math.max((currentScrollY - startScroll) / (endScroll - startScroll), 0), 1);
-      setAnimationProgress(progress);
-    };
-
-    let ticking = false;
-    const smoothHandleScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          handleScroll();
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener('scroll', smoothHandleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', smoothHandleScroll);
-  }, []);
-
-  const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
-  const easeOutElastic = (t: number) => {
-    const c4 = (2 * Math.PI) / 3;
-    return t === 0 ? 0 : t === 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
-  };
-
-  const smoothProgress = easeInOutCubic(animationProgress);
-  const elasticProgress = easeOutElastic(animationProgress);
-
-  return { 
-    scrollY, 
-    progress: animationProgress, 
-    smoothProgress, 
-    elasticProgress,
-    isCollapsed: animationProgress > 0
-  };
-};
-
-const CodingAnimation = () => {
-  const [displayedLines, setDisplayedLines] = useState<string[]>([]);
-  const [currentLineIndex, setCurrentLineIndex] = useState(0);
-  const [currentCharIndex, setCurrentCharIndex] = useState(0);
-  const [isTyping, setIsTyping] = useState(false);
-  const [hasAnimated, setHasAnimated] = useState(false);
-  const [isClient, setIsClient] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  // Intersection observer to detect when component is in view
-  useEffect(() => {
-    if (!isClient || hasAnimated) return;
-
-    const container = containerRef.current;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && !hasAnimated) {
-            setIsTyping(true);
-            setHasAnimated(true);
-          }
-        });
-      },
-      {
-        threshold: 0.3,
-        rootMargin: '0px'
-      }
-    );
-
-    if (container) {
-      observer.observe(container);
+const parseProjectDescriptions = (): { [key: string]: string } => {
+  const descriptionsEnv = process.env.NEXT_PUBLIC_PROJECT_DESCRIPTIONS || '';
+  if (!descriptionsEnv) return {};
+  
+  const descriptions: { [key: string]: string } = {};
+  descriptionsEnv.split(',').forEach(item => {
+    const [title, ...descParts] = item.split(':');
+    if (title && descParts.length > 0) {
+      // Replace literal \n with actual newline characters
+      descriptions[title.trim()] = descParts.join(':').trim().replace(/\\n/g, '\n');
     }
-
-    return () => {
-      if (container) {
-        observer.unobserve(container);
-      }
-    };
-  }, [isClient, hasAnimated]);
-
-  const personalInfo = getPersonalInfo();
-  const skillsArray = personalInfo.skills.split(',').map(s => s.trim()).filter(Boolean);
-
-  // Move codeSnippets inside useEffect to fix the dependency warning
-  useEffect(() => {
-    if (!isTyping) return;
-
-    const codeSnippets = [
-      "const developer = {",
-      "  name: '" + personalInfo.name + "',",
-      "  skills: [",
-      "    '" + skillsArray.slice(0, 2).join("', '") + "',",
-      "  ]",
-      "};",
-      "",
-      "const funFacts = {",
-      "  hackathons: 'Always excited ⚡',",
-      "  community: 'Love collaborating 🤝',",
-      "  passion: 'Building cool stuff! 🚀'",
-      "};",
-    ];
-
-    const currentLine = codeSnippets[currentLineIndex];
-    
-    if (currentCharIndex < currentLine.length) {
-      // Type current character
-      const timer = setTimeout(() => {
-        setDisplayedLines(prev => {
-          const newLines = [...prev];
-          if (newLines[currentLineIndex] === undefined) {
-            newLines[currentLineIndex] = '';
-          }
-          newLines[currentLineIndex] = currentLine.slice(0, currentCharIndex + 1);
-          return newLines;
-        });
-        setCurrentCharIndex(prev => prev + 1);
-      }, 50);
-
-      return () => clearTimeout(timer);
-    } else if (currentLineIndex < codeSnippets.length - 1) {
-      // Move to next line
-      const timer = setTimeout(() => {
-        setCurrentLineIndex(prev => prev + 1);
-        setCurrentCharIndex(0);
-      }, 300);
-
-      return () => clearTimeout(timer);
-    } else {
-      // Animation complete
-      setIsTyping(false);
-    }
-  }, [currentLineIndex, currentCharIndex, isTyping, personalInfo.name, skillsArray]);
-
-  const getLineColor = (line: string) => {
-    if (!line) return 'text-zinc-500';
-    if (line.trim() === '') return 'text-zinc-500';
-    
-    // Comments
-    if (line.includes('//')) return 'text-gray-500 italic';
-    
-    // Keywords (const, function, return)
-    if (line.match(/^\s*const\s+/) || line.match(/^\s*function\s+/) || line.match(/^\s*return\s+/)) {
-      return 'text-purple-400';
-    }
-    
-    // Property names and variable assignments
-    if (line.includes(':') && !line.includes('//')) {
-      return 'text-emerald-400';
-    }
-    
-    // Strings (anything with quotes but not comments)
-    if ((line.includes("'") || line.includes('"')) && !line.includes('//')) {
-      return 'text-amber-300';
-    }
-    
-    // Brackets and punctuation - opening/closing braces and brackets
-    if (line.match(/^\s*[\{\}\[\]]\s*$/)) {
-      return 'text-blue-300';
-    }
-    
-    return 'text-zinc-300';
-  };
-
-  if (!isClient) {
-    return (
-      <div ref={containerRef} className="relative w-full h-full bg-gradient-to-br from-zinc-900/90 to-black/95 overflow-hidden">
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(59,130,246,0.1)_1px,transparent_1px),linear-gradient(rgba(59,130,246,0.1)_1px,transparent_1px)] bg-[size:20px_20px]" />
-        </div>
-
-        <div className="absolute inset-0 flex items-center justify-center p-6">
-          <div className="bg-zinc-800/80 backdrop-blur-sm rounded-lg border border-zinc-700/50 p-4 max-w-sm w-full">
-            <div className="flex items-center gap-2 mb-3 border-b border-zinc-700/50 pb-2">
-              <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
-              <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
-              <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
-              <span className="text-xs text-zinc-400 ml-2 font-mono">developer.js</span>
-            </div>
-            
-            <div className="font-mono text-xs min-h-[200px]" style={{ whiteSpace: 'pre' }}>
-              {displayedLines.map((line, index) => {
-                const isCurrentLine = index === currentLineIndex && isTyping;
-                const lineColor = getLineColor(line);
-                
-                return (
-                  <div key={index} className="leading-relaxed">
-                    <span className={lineColor}>
-                      {line || '\u00A0'}
-                    </span>
-                    {isCurrentLine && (
-                      <motion.span
-                        animate={{ opacity: [1, 0] }}
-                        transition={{ duration: 0.8, repeat: Infinity }}
-                        className="text-blue-400"
-                      >
-                        |
-                      </motion.span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        <div className="absolute top-4 right-4">
-          <div className="w-8 h-8 border-2 border-blue-400/30 rounded-lg">
-            <Code className="w-4 h-4 text-blue-400/60 m-1" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div ref={containerRef} className="relative w-full h-full bg-gradient-to-br from-zinc-900/90 to-black/95 overflow-hidden">
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(59,130,246,0.1)_1px,transparent_1px),linear-gradient(rgba(59,130,246,0.1)_1px,transparent_1px)] bg-[size:20px_20px]" />
-      </div>
-      
-      <div className="absolute inset-0 flex items-center justify-center p-6">
-        <div className="bg-zinc-800/80 backdrop-blur-sm rounded-lg border border-zinc-700/50 p-4 max-w-sm w-full">
-          <div className="flex items-center gap-2 mb-3 border-b border-zinc-700/50 pb-2">
-            <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
-            <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
-            <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
-            <span className="text-xs text-zinc-400 ml-2 font-mono">developer.js</span>
-          </div>
-          
-          <div className="font-mono text-xs min-h-[200px]" style={{ whiteSpace: 'pre' }}>
-            {displayedLines.map((line, index) => {
-              const isCurrentLine = index === currentLineIndex && isTyping;
-              const lineColor = getLineColor(line);
-              
-              return (
-                <div key={index} className="leading-relaxed">
-                  <span className={lineColor}>
-                    {line || '\u00A0'}
-                  </span>
-                  {isCurrentLine && (
-                    <motion.span
-                      animate={{ opacity: [1, 0] }}
-                      transition={{ duration: 0.8, repeat: Infinity }}
-                      className="text-blue-400 ml-0"
-                    >
-                      |
-                    </motion.span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-function cn(...classes: (string | undefined | null | boolean)[]) {
-  return classes.filter(Boolean).join(' ');
-}
-
-function useOnClickOutside(ref: React.RefObject<HTMLElement | null>, handler: () => void) {
-  useEffect(() => {
-    const listener = (event: MouseEvent | TouchEvent) => {
-      if (!ref.current || ref.current.contains(event.target as Node)) {
-        return;
-      }
-      handler();
-    };
-
-    document.addEventListener('mousedown', listener);
-    document.addEventListener('touchstart', listener);
-
-    return () => {
-      document.removeEventListener('mousedown', listener);
-      document.removeEventListener('touchstart', listener);
-    };
-  }, [ref, handler]);
-}
-
-function CollisionNavbar({
-  tabs,
-  socialLinks,
-  onChange,
-}: {
-  tabs: TabItem[];
-  socialLinks: Array<{ title: string; icon: LucideIcon; href: string }>;
-  onChange?: (index: number | null) => void;
-}) {
-  const { progress } = useScrollPosition(); // Remove unused destructured variables
-  const [selectedTab, setSelectedTab] = useState<number | null>(null);
-  const [selectedSocial, setSelectedSocial] = useState<number | null>(null);
-  const outsideClickRef = useRef<HTMLDivElement>(null);
-
-  useOnClickOutside(outsideClickRef, () => {
-    setSelectedTab(null);
-    setSelectedSocial(null);
-    onChange?.(null);
   });
+  return descriptions;
+};
 
-  const handleTabSelect = (index: number) => {
-    setSelectedTab(index);
-    setSelectedSocial(null);
-    onChange?.(index);
-  };
+const parseMainProjects = (): MainProject[] => {
+  const mainProjectsEnv = process.env.NEXT_PUBLIC_PROJECTS || '';
+  if (!mainProjectsEnv) return [];
 
-  const handleSocialSelect = (index: number, href: string) => {
-    setSelectedSocial(index);
-    setSelectedTab(null);
+  return mainProjectsEnv.split(',').map(project => {
+    const parts = project.trim().split('|');
+    const title = parts[0]?.trim() || '';
+    const link = parts[1]?.trim() || '';
     
-    if (!href || href.trim() === '') {
-      console.log('No href provided for social link');
-      return;
+    // Generate thumbnail path from title (convert to lowercase and replace spaces)
+    const thumbnail = `/${title.toLowerCase().replace(/\s+/g, '')}.png`;
+    
+    return { title, thumbnail, link };
+  }).filter(project => project.title && project.link);
+};
+
+export default function Home() {
+  const personalInfo = getPersonalInfo();
+  const socialLinks = parseSocialLinks();
+  const mainProjects = parseMainProjects();
+  const projectDescriptions = parseProjectDescriptions();
+  const [, setActiveNav] = useState<string | null>(null);
+  const nameRef = useRef<HTMLHeadingElement>(null);
+  const roleRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    // Animate name
+    if (nameRef.current) {
+      const nameText = nameRef.current.textContent || '';
+      nameRef.current.innerHTML = nameText
+        .split('')
+        .map((char, idx) => `<span class="letter-animate" data-index="${idx}">${char === ' ' ? '&nbsp;' : char}</span>`)
+        .join('');
+
+      const nameLetters = nameRef.current.querySelectorAll('.letter-animate');
+      nameLetters.forEach((letter, idx) => {
+        setTimeout(() => {
+          letter.classList.add('letter-visible');
+        }, idx * 80 + Math.random() * 150);
+      });
     }
 
+    setTimeout(() => {
+      if (roleRef.current) {
+        const roleText = roleRef.current.textContent || '';
+        roleRef.current.innerHTML = roleText
+          .split('')
+          .map((char, idx) => `<span class="letter-animate" data-index="${idx}">${char === ' ' ? '&nbsp;' : char}</span>`)
+          .join('');
+
+        const roleLetters = roleRef.current.querySelectorAll('.letter-animate');
+        roleLetters.forEach((letter, idx) => {
+          setTimeout(() => {
+            letter.classList.add('letter-visible');
+          }, idx * 70 + Math.random() * 120);
+        });
+      }
+    }, personalInfo.name.length * 100 + 500);
+  }, [personalInfo.name, personalInfo.role]);
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleProjectClick = (link: string) => {
+    if (!link || link.trim() === '') return;
+    
     try {
-      let cleanUrl = href.trim();
+      let cleanUrl = link.trim();
+      if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+        cleanUrl = `https://${cleanUrl}`;
+      }
+      window.open(cleanUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      console.error('Error opening URL:', error);
+    }
+  };
+
+  const handleSocialClick = (url: string) => {
+    if (!url || url.trim() === '') return;
+    
+    try {
+      let cleanUrl = url.trim();
       
       // Handle mailto links
       if (cleanUrl.startsWith('mailto:')) {
@@ -530,928 +155,365 @@ function CollisionNavbar({
         return;
       }
       
-      // Add protocol if missing for other links
+      // Add protocol if missing
       if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
         cleanUrl = `https://${cleanUrl}`;
       }
       
-      console.log('Opening social URL:', cleanUrl);
       window.open(cleanUrl, '_blank', 'noopener,noreferrer');
     } catch (error) {
       console.error('Error opening social URL:', error);
     }
   };
 
-  const getMergedOpacity = () => {
-    // Start showing merged navbar when collision is almost complete
-    return progress > 0.8 ? (progress - 0.8) / 0.2 : 0;
-  };
-
-  const getSeparateOpacity = () => {
-    // Hide separate navbars when collision is almost complete
-    // More aggressive hiding on mobile (smaller screens)
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-    const hideThreshold = isMobile ? 0.6 : 0.8;
-    const fadeRange = isMobile ? 0.3 : 0.2;
-    
-    return progress > hideThreshold ? 
-      Math.max(0, 1 - ((progress - hideThreshold) / fadeRange)) : 1;
-  };
-
-  const getAdvancedLeftTransform = () => {
-    const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
-    const baseX = 0;
-    const centerTarget = windowWidth / 2 - 250;
-    
-    // Multi-phase movement with different easing
-    const phase1 = Math.min(progress * 3, 1); // Initial acceleration
-    const phase2 = Math.max(0, Math.min((progress - 0.3) * 2.5, 1)); // Mid collision
-    const phase3 = Math.max(0, Math.min((progress - 0.7) * 3.33, 1)); // Final merge
-    
-    const currentX = baseX + (centerTarget * phase1) + (50 * phase2) - (20 * phase3);
-    
-    // Advanced deformation effects
-    const stretchX = 1 + (0.3 * phase2) - (0.2 * phase3);
-    const stretchY = 1 - (0.1 * phase2) + (0.05 * phase3);
-    const rotation = (phase1 * 3) - (phase2 * 2) + (phase3 * 1);
-    
-    // Magnetic attraction effect
-    const magneticPull = Math.sin(progress * Math.PI) * 10;
-    
-    return {
-      x: currentX + magneticPull,
-      scaleX: stretchX,
-      scaleY: stretchY,
-      rotate: rotation,
-      skewX: phase2 * 3,
-    };
-  };
-
-  const getAdvancedRightTransform = () => {
-    const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
-    const baseX = 0;
-    const centerTarget = -(windowWidth / 2 - 250);
-    
-    const phase1 = Math.min(progress * 3, 1);
-    const phase2 = Math.max(0, Math.min((progress - 0.3) * 2.5, 1));
-    const phase3 = Math.max(0, Math.min((progress - 0.7) * 3.33, 1));
-    
-    const currentX = baseX + (centerTarget * phase1) - (50 * phase2) + (20 * phase3);
-    
-    const stretchX = 1 + (0.3 * phase2) - (0.2 * phase3);
-    const stretchY = 1 - (0.1 * phase2) + (0.05 * phase3);
-    const rotation = -(phase1 * 3) + (phase2 * 2) - (phase3 * 1);
-    
-    const magneticPull = Math.sin(progress * Math.PI) * -10;
-    
-    return {
-      x: currentX + magneticPull,
-      scaleX: stretchX,
-      scaleY: stretchY,
-      rotate: rotation,
-      skewX: -phase2 * 3,
-    };
-  };
-
-  const getFluidBorderRadius = (isLeft: boolean) => {
-    const base = 16;
-    const deformation = progress * 12;
-    
-    if (isLeft) {
-      return `${base}px ${base + deformation}px ${base + deformation}px ${base}px`;
-    } else {
-      return `${base + deformation}px ${base}px ${base}px ${base + deformation}px`;
-    }
-  };
-
   return (
-    <div className="fixed inset-0 z-50 pointer-events-none">
-      {/* Left navigation - tabs */}
-      <motion.div
-        className="absolute top-4 sm:top-6 left-2 sm:left-6 pointer-events-auto"
-        animate={getAdvancedLeftTransform()}
-        transition={{ 
-          type: "spring", 
-          stiffness: 150, 
-          damping: 25, 
-          mass: 0.5,
-          velocity: progress > 0.5 ? 20 : 0
-        }}
-        style={{ 
-          opacity: getSeparateOpacity(),
-          visibility: getSeparateOpacity() < 0.01 ? 'hidden' : 'visible',
-          pointerEvents: getSeparateOpacity() < 0.01 ? 'none' : 'auto'
-        }}
-      >
-        <motion.div 
-          className="flex items-center gap-0.5 sm:gap-1 border border-zinc-800 bg-black/20 backdrop-blur-lg p-0.5 sm:p-1 shadow-lg overflow-hidden relative max-w-[calc(100vw-1rem)] sm:max-w-none"
-          style={{ 
-            borderRadius: getFluidBorderRadius(true),
-            background: `rgba(0,0,0,0.2)`,
-            boxShadow: `0 4px 15px rgba(0,0,0,0.3)`,
-            overflowX: 'auto',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-          }}
-          animate={{
-            filter: `blur(${progress * 0.3}px) brightness(${1 + progress * 0.2})`,
-          }}
-        >
-          {tabs.map((tab, index) => {
-            if (tab.type === "separator") {
-              return (
-                <motion.div 
-                  key={`separator-${index}`} 
-                  className="mx-0.5 sm:mx-1 h-[20px] sm:h-[24px] w-[1px] sm:w-[1.2px] bg-zinc-700 flex-shrink-0"
-                  animate={{
-                    scaleY: 1 - (progress * 0.3),
-                    opacity: 1 - (progress * 0.4)
-                  }}
-                />
-              );
-            }
-
-            const Icon = tab.icon;
-            return (
-              <motion.button
-                key={tab.title}
-                onClick={() => handleTabSelect(index)}
-                className={cn(
-                  "relative flex items-center rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2 text-sm font-medium transition-colors duration-300 flex-shrink-0 whitespace-nowrap",
-                  selectedTab === index
-                    ? "bg-zinc-800/50 text-blue-400"
-                    : "text-zinc-400 hover:bg-zinc-800/30 hover:text-white"
-                )}
-                animate={{
-                  scale: 1 - (progress * 0.1) + (index === selectedTab ? 0.05 : 0),
-                  opacity: 1 - (progress * 0.2),
-                  y: Math.sin(progress * Math.PI + index) * 2
-                }}
-                whileHover={{ 
-                  scale: 1.05,
-                  transition: { duration: 0.2 }
-                }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Icon size={16} className="sm:w-5 sm:h-5" />
-                <AnimatePresence initial={false}>
-                  {selectedTab === index && (
-                    <motion.span
-                      initial={{ width: 0, opacity: 0 }}
-                      animate={{ width: "auto", opacity: 1 }}
-                      exit={{ width: 0, opacity: 0 }}
-                      className="overflow-hidden whitespace-nowrap ml-1 sm:ml-2 hidden sm:inline"
-                    >
-                      {tab.title}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </motion.button>
-            );
-          })}
-        </motion.div>
-      </motion.div>
-
-      {/* Right navigation - social links */}
-      <motion.div
-        className="absolute top-4 sm:top-6 right-2 sm:right-6 pointer-events-auto"
-        animate={getAdvancedRightTransform()}
-        transition={{ 
-          type: "spring", 
-          stiffness: 150, 
-          damping: 25, 
-          mass: 0.5,
-          velocity: progress > 0.5 ? -20 : 0
-        }}
-        style={{ 
-          opacity: getSeparateOpacity(),
-          visibility: getSeparateOpacity() < 0.01 ? 'hidden' : 'visible',
-          pointerEvents: getSeparateOpacity() < 0.01 ? 'none' : 'auto'
-        }}
-      >
-        <motion.div 
-          className="flex items-center gap-0.5 sm:gap-1 border border-zinc-800 bg-black/20 backdrop-blur-lg p-0.5 sm:p-1 shadow-lg overflow-hidden relative max-w-[calc(100vw-1rem)] sm:max-w-none"
-          style={{ 
-            borderRadius: getFluidBorderRadius(false),
-            background: `rgba(0,0,0,0.2)`,
-            boxShadow: `0 4px 15px rgba(0,0,0,0.3)`,
-            overflowX: 'auto',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-          }}
-          animate={{
-            filter: `blur(${progress * 0.3}px) brightness(${1 + progress * 0.2})`,
-          }}
-        >
-          {socialLinks.map((link, index) => {
-            const Icon = link.icon;
-            return (
-              <motion.button
-                key={`${link.title}-${index}`}
-                onClick={() => handleSocialSelect(index, link.href)}
-                className={cn(
-                  "relative flex items-center rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2 text-sm font-medium transition-colors duration-300 flex-shrink-0 whitespace-nowrap",
-                  selectedSocial === index
-                    ? "bg-zinc-800/50 text-blue-400"
-                    : "text-zinc-400 hover:bg-zinc-800/30 hover:text-white"
-                )}
-                animate={{
-                  scale: 1 - (progress * 0.1) + (index === selectedSocial ? 0.05 : 0),
-                  opacity: 1 - (progress * 0.2),
-                  y: Math.sin(progress * Math.PI + index + Math.PI) * 2
-                }}
-                whileHover={{ 
-                  scale: 1.05,
-                  transition: { duration: 0.2 }
-                }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Icon size={16} className="sm:w-5 sm:h-5" />
-                <AnimatePresence initial={false}>
-                  {selectedSocial === index && (
-                    <motion.span
-                      initial={{ width: 0, opacity: 0 }}
-                      animate={{ width: "auto", opacity: 1 }}
-                      exit={{ width: 0, opacity: 0 }}
-                      className="overflow-hidden whitespace-nowrap ml-1 sm:ml-2 hidden sm:inline"
-                    >
-                      {link.title}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </motion.button>
-            );
-          })}
-        </motion.div>
-      </motion.div>
-
-      {/* Merged navigation */}
-      <motion.div
-        className="absolute top-4 sm:top-6 left-1/2 transform -translate-x-1/2 pointer-events-auto"
-        initial={{ opacity: 0, scale: 0.3, y: -40, rotateX: -90 }}
-        animate={{ 
-          opacity: getMergedOpacity(),
-          scale: 0.3 + (0.7 * getMergedOpacity()),
-          y: -40 + (40 * getMergedOpacity()),
-          rotateX: -90 + (90 * getMergedOpacity())
-        }}
-        transition={{ 
-          type: "spring", 
-          stiffness: 200, 
-          damping: 20,
-          mass: 0.8
-        }}
-        style={{
-          visibility: getMergedOpacity() > 0.01 ? 'visible' : 'hidden',
-          pointerEvents: getMergedOpacity() > 0.01 ? 'auto' : 'none'
-        }}
-        ref={outsideClickRef}
-      >
-        <motion.div 
-          className="flex items-center gap-1 sm:gap-2 rounded-xl sm:rounded-2xl border border-zinc-800 bg-black/20 backdrop-blur-lg p-0.5 sm:p-1 shadow-lg relative overflow-hidden max-w-[calc(100vw-1rem)]"
-          style={{
-            background: `rgba(0,0,0,0.2)`,
-            boxShadow: `0 8px 25px rgba(0,0,0,0.4)`,
-            overflowX: 'auto',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-          }}
-          animate={{
-            filter: `brightness(${1 + getMergedOpacity() * 0.3})`,
-          }}
-        >
-          {/* Tabs in merged nav */}
-          {tabs.map((tab, index) => {
-            if (tab.type === "separator") {
-              return (
-                <motion.div 
-                  key={`separator-${index}`} 
-                  className="mx-1 sm:mx-2 h-[20px] sm:h-[24px] w-[1px] sm:w-[1.2px] bg-zinc-700 flex-shrink-0"
-                  initial={{ opacity: 0, scaleY: 0, rotateZ: 180 }}
-                  animate={{ 
-                    opacity: getMergedOpacity(), 
-                    scaleY: getMergedOpacity(),
-                    rotateZ: 0
-                  }}
-                  transition={{ 
-                    delay: index * 0.08,
-                    type: "spring",
-                    stiffness: 300
-                  }}
-                />
-              );
-            }
-
-            const Icon = tab.icon;
-            return (
-              <motion.button
-                key={tab.title}
-                onClick={() => handleTabSelect(index)}
-                className={cn(
-                  "relative flex items-center rounded-lg sm:rounded-xl px-2 sm:px-4 py-1.5 sm:py-2 text-sm font-medium transition-all duration-300 flex-shrink-0 whitespace-nowrap",
-                  selectedTab === index
-                    ? "bg-zinc-800/50 text-blue-400"
-                    : "text-zinc-400 hover:bg-zinc-800/30 hover:text-white"
-                )}
-                initial={{ 
-                  opacity: 0, 
-                  x: -30, 
-                  rotateY: -90,
-                  scale: 0.5
-                }}
-                animate={{ 
-                  opacity: getMergedOpacity(), 
-                  x: 0,
-                  rotateY: 0,
-                  scale: 1
-                }}
-                transition={{ 
-                  delay: index * 0.08,
-                  type: "spring",
-                  stiffness: 200,
-                  damping: 20
-                }}
-                whileHover={{ 
-                  scale: 1.05,
-                  transition: { duration: 0.2 }
-                }}
-                whileTap={{ 
-                  scale: 0.95
-                }}
-              >
-                <Icon size={16} className="sm:w-5 sm:h-5" />
-                
-                <AnimatePresence initial={false}>
-                  {selectedTab === index && (
-                    <motion.span
-                      initial={{ width: 0, opacity: 0, x: -10 }}
-                      animate={{ width: "auto", opacity: 1, x: 0 }}
-                      exit={{ width: 0, opacity: 0, x: -10 }}
-                      className="overflow-hidden whitespace-nowrap ml-1 sm:ml-2 font-medium hidden sm:inline"
-                      transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                    >
-                      {tab.title}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </motion.button>
-            );
-          })}
-
-          {/* Separator between tabs and social links */}
-          <motion.div 
-            className="mx-1.5 sm:mx-3 h-[22px] sm:h-[28px] w-[1.5px] sm:w-[2px] bg-zinc-700 rounded-full flex-shrink-0"
-            initial={{ opacity: 0, scaleY: 0, rotateZ: 180 }}
-            animate={{ 
-              opacity: getMergedOpacity() * 0.8, 
-              scaleY: getMergedOpacity(),
-              rotateZ: 0
-            }}
-            transition={{ 
-              delay: tabs.length * 0.08,
-              type: "spring",
-              stiffness: 300
-            }}
-          />
-
-          {/* Social links in merged nav */}
-          {socialLinks.map((link, index) => {
-            const Icon = link.icon;
-            return (
-              <motion.button
-                key={`${link.title}-merged-${index}`}
-                onClick={() => handleSocialSelect(index, link.href)}
-                className={cn(
-                  "relative flex items-center rounded-lg sm:rounded-xl px-2 sm:px-4 py-1.5 sm:py-2 text-sm font-medium transition-all duration-300 flex-shrink-0 whitespace-nowrap",
-                  selectedSocial === index
-                    ? "bg-zinc-800/50 text-blue-400"
-                    : "text-zinc-400 hover:bg-zinc-800/30 hover:text-white"
-                )}
-                initial={{ 
-                  opacity: 0, 
-                  x: 30, 
-                  rotateY: 90,
-                  scale: 0.5
-                }}
-                animate={{ 
-                  opacity: getMergedOpacity(), 
-                  x: 0,
-                  rotateY: 0,
-                  scale: 1
-                }}
-                transition={{ 
-                  delay: (tabs.length + index + 1) * 0.08,
-                  type: "spring",
-                  stiffness: 200,
-                  damping: 20
-                }}
-                whileHover={{ 
-                  scale: 1.05,
-                  transition: { duration: 0.2 }
-                }}
-                whileTap={{ 
-                  scale: 0.95
-                }}
-              >
-                <Icon size={16} className="sm:w-5 sm:h-5" />
-                
-                <AnimatePresence initial={false}>
-                  {selectedSocial === index && (
-                    <motion.span
-                      initial={{ width: 0, opacity: 0, x: 10 }}
-                      animate={{ width: "auto", opacity: 1, x: 0 }}
-                      exit={{ width: 0, opacity: 0, x: 10 }}
-                      className="overflow-hidden whitespace-nowrap ml-1 sm:ml-2 font-medium hidden sm:inline"
-                      transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                    >
-                      {link.title}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </motion.button>
-            );
-          })}
-        </motion.div>
-      </motion.div>
-    </div>
-  );
-}
-
-const Typist = ({ text, cursor = true }: { text: string; cursor?: boolean }) => {
-  const [displayText, setDisplayText] = useState('');
-  const [showCursor, setShowCursor] = useState(true);
-
-  useEffect(() => {
-    let i = 0;
-    const timer = setInterval(() => {
-      if (i < text.length) {
-        setDisplayText(text.slice(0, i + 1));
-        i++;
-      } else {
-        clearInterval(timer);
-      }
-    }, 100);
-
-    return () => clearInterval(timer);
-  }, [text]);
-
-  useEffect(() => {
-    if (!cursor) return;
-    const cursorTimer = setInterval(() => {
-      setShowCursor(prev => !prev);
-    }, 500);
-    return () => clearInterval(cursorTimer);
-  }, [cursor]);
-
-  return (
-    <span>
-      {displayText}
-      {cursor && <span className={`${showCursor ? 'opacity-100' : 'opacity-0'}`}>|</span>}
-    </span>
-  );
-};
-
-const CardCanvas = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
-  return (
-    <div className={`card-canvas relative ${className}`} style={{ isolation: 'isolate' }}>
-      <svg style={{ position: 'absolute', width: 0, height: 0 }}>
-        <filter width="3000%" x="-1000%" height="3000%" y="-1000%" id="unopaq">
-          <feColorMatrix values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 3 0"></feColorMatrix>
-        </filter>
+    <div className="min-h-screen bg-black text-white relative overflow-x-hidden roboto-slab-regular">
+      {/* Custom SVG Grain Pattern */}
+      <svg style={{ position: 'fixed', width: 0, height: 0 }}>
+        <defs>
+          <filter id="grainFilter">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch" />
+          </filter>
+        </defs>
       </svg>
-      <div className="card-backdrop absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-pink-500/5 rounded-2xl"></div>
-      {children}
-    </div>
-  );
-};
 
-const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
-  return (
-    <div className={`glow-card relative group ${className}`}>
-      <div className="border-element border-left absolute left-0 top-0 h-full w-[1px] bg-gradient-to-b from-transparent via-blue-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      <div className="border-element border-right absolute right-0 top-0 h-full w-[1px] bg-gradient-to-b from-transparent via-purple-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      <div className="border-element border-top absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      <div className="border-element border-bottom absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-pink-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      <div className="card-content relative z-10 h-full">
-        {children}
-      </div>
-    </div>
-  );
-};
-
-const RetroGrid = ({
-  className,
-  angle = 65,
-}: {
-  className?: string;
-  angle?: number;
-}) => {
-  return (
-    <div
-      className={cn(
-        "pointer-events-none absolute size-full overflow-hidden opacity-50 [perspective:200px]",
-        className,
-      )}
-      style={{ "--grid-angle": `${angle}deg` } as React.CSSProperties}
-    >
-      {/* Grid */}
-      <div className="absolute inset-0 [transform:rotateX(var(--grid-angle))]">
-        <div
-          className={cn(
-            "animate-grid",
-            "[background-repeat:repeat] [background-size:60px_60px] [height:300vh] [inset:0%_0px] [margin-left:-50%] [transform-origin:100%_0_0] [width:600vw]",
-            // Light Styles
-            "[background-image:linear-gradient(to_right,rgba(0,0,0,0.3)_1px,transparent_0),linear-gradient(to_bottom,rgba(0,0,0,0.3)_1px,transparent_0)]",
-            // Dark styles
-            "dark:[background-image:linear-gradient(to_right,rgba(255,255,255,0.2)_1px,transparent_0),linear-gradient(to_bottom,rgba(255,255,255,0.2)_1px,transparent_0)]",
-          )}
-          style={{
-            animation: "grid 15s linear infinite",
-          }}
-        />
+      {/* Animated Grain overlay */}
+      <div className="grain-container">
+        <div className="grain-animation" />
       </div>
 
-      {/* Background Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-white to-transparent to-90% dark:from-black" />
-      
-      <style jsx>{`
-        @keyframes grid {
-          0% {
-            transform: translateY(-50%);
-          }
-          100% {
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-    </div>
-  );
-};
+      {/* Navigation */}
+      <nav className="fixed top-0 left-0 right-0 z-40 px-4 md:px-6 py-3 md:py-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          {/* Left navigation */}
+          <div className="flex items-center gap-2 md:gap-4">
+            <button
+              onClick={() => {
+                setActiveNav('home');
+                scrollToSection('hero');
+              }}
+              className="w-8 h-8 md:w-10 md:h-10 relative hover:scale-110 transition-transform"
+            >
+              <Image src="/home.png" alt="Home" fill className="object-contain" />
+            </button>
+            <button
+              onClick={() => {
+                setActiveNav('about');
+                scrollToSection('about');
+              }}
+              className="w-8 h-8 md:w-10 md:h-10 relative hover:scale-110 transition-transform"
+            >
+              <Image src="/about.png" alt="About" fill className="object-contain" />
+            </button>
+            <button
+              onClick={() => {
+                setActiveNav('projects');
+                scrollToSection('projects');
+              }}
+              className="w-8 h-8 md:w-10 md:h-10 relative hover:scale-110 transition-transform"
+            >
+              <Image src="/projects.png" alt="Projects" fill className="object-contain" />
+            </button>
+          </div>
 
-const ProjectCard = ({ 
-  title, 
-  description, 
-  year, 
-  company, 
-  link, 
-  isLarge = false 
-}: { 
-  title: string; 
-  description: string; 
-  year: string; 
-  company: string; 
-  link: string; 
-  isLarge?: boolean;
-}) => {
-  const handleProjectClick = () => {
-    if (!link || link.trim() === '') {
-      console.log('No link provided for project:', title);
-      return;
-    }
+          {/* Right navigation - reordered: GitHub, LinkedIn, X, Email */}
+          <div className="flex items-center gap-2 md:gap-4">
+            <button
+              onClick={() => handleSocialClick(socialLinks.github)}
+              className="w-8 h-8 md:w-10 md:h-10 relative hover:scale-110 transition-transform"
+            >
+              <Image src="/github.png" alt="GitHub" fill className="object-contain" />
+            </button>
+            <button
+              onClick={() => handleSocialClick(socialLinks.linkedin)}
+              className="w-8 h-8 md:w-10 md:h-10 relative hover:scale-110 transition-transform"
+            >
+              <Image src="/linkedin.png" alt="LinkedIn" fill className="object-contain" />
+            </button>
+            <button
+              onClick={() => handleSocialClick(socialLinks.twitter)}
+              className="w-8 h-8 md:w-10 md:h-10 relative hover:scale-110 transition-transform"
+            >
+              <Image src="/xtwitter.png" alt="X/Twitter" fill className="object-contain" />
+            </button>
+            <button
+              onClick={() => handleSocialClick(socialLinks.email)}
+              className="w-8 h-8 md:w-10 md:h-10 relative hover:scale-110 transition-transform"
+            >
+              <Image src="/mail.png" alt="Mail" fill className="object-contain" />
+            </button>
+          </div>
+        </div>
+      </nav>
 
-    try {
-      // Clean the URL
-      let cleanUrl = link.trim();
-      
-      // Handle URLs that might have been split incorrectly due to colons
-      // If the URL looks incomplete, try to reconstruct it
-      if (cleanUrl && !cleanUrl.startsWith('http') && !cleanUrl.startsWith('www')) {
-        // Check if this might be a partial URL that got split
-        console.log('Potentially incomplete URL for', title, ':', cleanUrl);
-      }
-      
-      // Add protocol if missing
-      if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
-        cleanUrl = `https://${cleanUrl}`;
-      }
-      
-      console.log('Opening URL for', title, ':', cleanUrl);
-      window.open(cleanUrl, '_blank', 'noopener,noreferrer');
-    } catch (error) {
-      console.error('Error opening URL for', title, ':', error);
-    }
-  };
+      {/* Hero Section */}
+      <section id="hero" className="min-h-screen relative flex items-center justify-center">
+        <div className="absolute inset-0 bg-black" />
+        
+        <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
+          <div>
+            <h1 
+              ref={nameRef}
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-bold mb-4 md:mb-6"
+            >
+              Hi, I&apos;m {personalInfo.name}
+            </h1>
+            <p 
+              ref={roleRef}
+              className="text-lg sm:text-xl md:text-2xl px-4"
+            >
+              {personalInfo.role}
+            </p>
+          </div>
+        </div>
+        
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-b from-transparent to-black z-10" />
+      </section>
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-      className={`group cursor-pointer ${isLarge ? 'h-80 lg:h-96' : 'h-64'}`}
-      onClick={handleProjectClick}
-    >
-      <CardCanvas className="h-full">
-        <Card className="h-full">
-          <div className={`
-            relative h-full p-1.5 rounded-2xl overflow-hidden
-            bg-white/5 dark:bg-black/90
-            bg-gradient-to-br from-black/5 to-black/[0.02] dark:from-white/5 dark:to-white/[0.02]
-            backdrop-blur-xl backdrop-saturate-[180%]
-            border border-black/10 dark:border-white/10
-            shadow-[0_8px_16px_rgb(0_0_0_/_0.15)] dark:shadow-[0_8px_16px_rgb(0_0_0_/_0.25)]
-            will-change-transform translate-z-0
-            transition-all duration-300 group-hover:scale-[1.02]
-          `}>
-            <div className={`
-              w-full h-full p-6 rounded-xl relative
-              bg-gradient-to-br from-black/[0.05] to-transparent dark:from-white/[0.08] dark:to-transparent
-              backdrop-blur-md backdrop-saturate-150
-              border border-black/[0.05] dark:border-white/[0.08]
-              text-black/90 dark:text-white
-              shadow-sm
-              will-change-transform translate-z-0
-              before:absolute before:inset-0 before:bg-gradient-to-br before:from-black/[0.02] before:to-black/[0.01] dark:before:from-white/[0.03] dark:before:to-white/[0.01] before:opacity-0 before:transition-opacity before:pointer-events-none
-              group-hover:before:opacity-100
-              flex flex-col justify-between
-            `}>
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs text-zinc-400 dark:text-white/60 uppercase tracking-wider font-medium">
-                    {company}
-                  </span>
-                  <span className="text-xs text-zinc-500 dark:text-white/50 tabular-nums">
-                    {year}
-                  </span>
-                </div>
-                <h3 className="text-xl font-semibold text-black dark:text-white mb-3 group-hover:text-blue-400 transition-colors duration-300">
-                  {title}
-                </h3>
-                <p className="text-zinc-600 dark:text-zinc-300 text-sm leading-relaxed">
-                  {description}
-                </p>
-              </div>
-              
-              <div className="flex items-center justify-between mt-6">
-                <button 
-                  className="text-zinc-500 dark:text-zinc-400 hover:text-blue-400 dark:hover:text-blue-400 transition-colors flex items-center gap-2 text-sm font-medium uppercase tracking-wider"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleProjectClick();
-                  }}
-                >
-                  <span>Visit</span>
-                  <ExternalLink className="w-4 h-4" />
-                </button>
-                <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-                  <Code className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
+      {/* About Section */}
+      <section id="about" className="min-h-screen relative flex items-center justify-center py-20">
+        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-t from-transparent to-black z-10" />
+        
+        <div className="absolute inset-0">
+          <Image 
+            src="/aboutbg.png" 
+            alt="About Background" 
+            fill 
+            className="object-cover scale-x-[-1]"
+          />
+          <div className="absolute inset-0 bg-black/50" />
+        </div>
+        
+        <div className="relative z-10 max-w-4xl mx-auto px-6">
+          {/* Brutalist split layout with asymmetric boxes */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left side - Title block with extreme contrast */}
+            <div className="lg:col-span-5 relative">
+              <div className="sticky top-24">
+                {/* Tilted background block - using crimson red with opposite animation */}
+                <div className="absolute -inset-4 bg-gradient-to-br from-[#8B0000] to-[#1a1a1a] opacity-90 about-bg-animate" />
+                
+                <div className="relative bg-black border-4 p-8 about-title-animate about-border-glitch">
+                  {/* Noise texture */}
+                  <div className="absolute inset-0 opacity-10 mix-blend-overlay pointer-events-none" style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='2' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+                    backgroundSize: '100px 100px'
+                  }} />
+                  
+                  <h2 className="text-6xl md:text-7xl font-bold uppercase leading-none tracking-tighter mb-4 about-text-glitch" style={{
+                    WebkitTextStroke: '2px #e8e6e3',
+                    WebkitTextFillColor: 'transparent',
+                    textShadow: '4px 4px 0px rgba(139, 0, 0, 0.5)'
+                  }}>
+                    About
+                  </h2>
+                  <h2 className="text-6xl md:text-7xl font-bold uppercase leading-none tracking-tighter" style={{
+                    color: '#e8e6e3',
+                    textShadow: '4px 4px 0px rgba(26, 26, 26, 0.7)'
+                  }}>
+                    Me
+                  </h2>
+                  
+                  {/* Decorative elements - using theme colors */}
+                  <div className="mt-6 flex gap-2">
+                    <div className="w-12 h-1 bg-[#8B0000]" />
+                    <div className="w-8 h-1 bg-[#3a3a3a]" />
+                    <div className="w-4 h-1 bg-[#1a1a1a]" />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </Card>
-      </CardCanvas>
-    </motion.div>
-  );
-};
 
-const ProjectCarousel = ({ projects }: { projects: SliderProject[] }) => {
-  const [currentProject, setCurrentProject] = useState(0);
-
-  const nextProject = () => {
-    if (projects.length > 0) {
-      setCurrentProject((prev) => (prev + 1) % projects.length);
-    }
-  };
-
-  const prevProject = () => {
-    if (projects.length > 0) {
-      setCurrentProject((prev) => (prev - 1 + projects.length) % projects.length);
-    }
-  };
-
-  if (projects.length === 0) {
-    return (
-      <div className="text-center text-zinc-400 py-12">
-        No projects available
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative">
-      <div className="overflow-hidden">
-        <motion.div
-          key={currentProject}
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <ProjectCard {...projects[currentProject]} isLarge />
-        </motion.div>
-      </div>
-      
-      <div className="flex justify-center mt-6 gap-2">
-        {projects.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrentProject(index)}
-            className={`w-2 h-2 rounded-full transition-all duration-300 ${
-              currentProject === index ? 'bg-blue-400 w-8' : 'bg-zinc-600'
-            }`}
-          />
-        ))}
-      </div>
-      
-      <button
-        onClick={prevProject}
-        className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white transition-colors p-2"
-      >
-        <ChevronLeft className="w-6 h-6" />
-      </button>
-      <button
-        onClick={nextProject}
-        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white transition-colors p-2"
-      >
-        <ChevronRight className="w-6 h-6" />
-      </button>
-    </div>
-  );
-};
-
-const ProjectGrid = ({ projects }: { projects: SmallProject[] }) => {
-  if (projects.length === 0) {
-    return (
-      <div className="text-center text-zinc-400 py-12">
-        No projects available
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {projects.map((project, index) => (
-        <ProjectCard key={index} {...project} />
-      ))}
-    </div>
-  );
-};
-
-type ViewAnimationProps = {
-  delay?: number;
-  className?: string;
-  children: React.ReactNode;
-};
-
-function AnimatedContainer({ className, delay = 0.1, children }: ViewAnimationProps) {
-  return (
-    <motion.div
-      initial={{ filter: 'blur(4px)', translateY: -8, opacity: 0 }}
-      whileInView={{ filter: 'blur(0px)', translateY: 0, opacity: 1 }}
-      viewport={{ once: true }}
-      transition={{ delay, duration: 0.8 }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-export default function Home() {
-  const personalInfo = getPersonalInfo();
-  const socialLinks = parseSocialLinks();
-  const technologies = parseTechnologies();
-  const sliderProjects = parseSliderProjects();
-  const smallProjects = parseSmallProjects();
-  // parseMainProjects is not used, but keeping it for potential future use
-
-  const navTabs: TabItem[] = [
-    { title: 'intro', icon: HomeIcon },
-    { title: 'about', icon: User },
-    { title: 'projects', icon: Briefcase }
-  ];
-
-  const scrollToSection = (sectionId: string) => {
-    const sections = ['intro', 'about', 'projects'];
-    const sectionIndex = parseInt(sectionId);
-    const targetSection = sections[sectionIndex] || sections[0];
-    
-    const element = document.getElementById(targetSection);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  const handleNavChange = (index: number | null) => {
-    if (index !== null && navTabs[index]) {
-      scrollToSection(index.toString());
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="fixed inset-0 bg-gradient-to-br from-zinc-900/90 to-black/95" />
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/20 via-transparent to-purple-900/20" />
-      
-      <CollisionNavbar
-        tabs={navTabs}
-        socialLinks={socialLinks}
-        onChange={handleNavChange}
-      />
-      <div className="relative z-10">
-        <section id="intro" className="min-h-screen flex items-center justify-center px-6">
-          <div className="container mx-auto max-w-6xl text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="space-y-8"
-            >
-              <div className="space-y-4">
-                <h1 className="text-6xl lg:text-8xl font-bold tracking-tight">
-                  <span className="bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
-                    <Typist text={`Hi, I'm ${personalInfo.name}`} />
-                  </span>
-                </h1>
-                <div className="text-xl lg:text-2xl text-zinc-400">
-                  {personalInfo.role}
+            {/* Right side - Content blocks with magazine cutout style */}
+            <div className="lg:col-span-7 space-y-6">
+              {/* Main description box */}
+              <div className="relative group">
+                {/* Glowing shadow effect */}
+                <div className="absolute -inset-2 bg-gradient-to-r from-[#8B0000] via-[#1a1a1a] to-[#8B0000] opacity-30 blur-xl group-hover:opacity-50 transition-opacity" />
+                
+                {/* Offset background layer */}
+                <div className="absolute inset-0 bg-[#8B0000] transform translate-x-2 translate-y-2 opacity-20" />
+                
+                <div className="relative bg-black border-2 border-[#8B0000] p-8 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all duration-300" style={{
+                  boxShadow: '4px 4px 0px rgba(139, 0, 0, 0.3)'
+                }}>
+                  {/* Corner accent marks */}
+                  <div className="absolute top-0 left-0 w-12 h-12 border-t-[3px] border-l-[3px] border-[#8B0000]" />
+                  <div className="absolute bottom-0 right-0 w-12 h-12 border-b-[3px] border-r-[3px] border-[#8B0000]" />
+                  
+                  {/* Torn paper edge effect at top */}
+                  <div className="absolute -top-[2px] left-8 right-8 h-[3px] bg-[#8B0000] opacity-40" style={{
+                    clipPath: 'polygon(0 0, 5% 100%, 10% 0, 15% 100%, 20% 0, 25% 100%, 30% 0, 35% 100%, 40% 0, 45% 100%, 50% 0, 55% 100%, 60% 0, 65% 100%, 70% 0, 75% 100%, 80% 0, 85% 100%, 90% 0, 95% 100%, 100% 0)'
+                  }} />
+                  
+                  {/* Halftone texture overlay */}
+                  <div className="absolute inset-0 opacity-5 pointer-events-none" style={{
+                    backgroundImage: 'radial-gradient(circle, #8B0000 1px, transparent 1px)',
+                    backgroundSize: '8px 8px'
+                  }} />
+                  
+                  {/* Red accent bar on left */}
+                  <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-[#8B0000] group-hover:w-2 transition-all duration-300" />
+                  
+                  <p className="text-lg leading-relaxed relative" style={{ color: '#d4d2cf' }}>
+                    {personalInfo.aboutText}
+                  </p>
+                  
+                  {/* Bottom corner stamp effect */}
+                  <div className="absolute bottom-4 right-4 w-4 h-4 border-2 border-[#8B0000] transform rotate-45 opacity-50" />
                 </div>
               </div>
-              
-            </motion.div>
-          </div>
-        </section>
 
-        <section id="about" className="py-20 px-6">
-          <div className="container mx-auto max-w-6xl">
-            <AnimatedContainer>
-              <div className="grid lg:grid-cols-2 gap-12 items-center">
-                <div className="space-y-6">
-                  <h2 className="text-4xl lg:text-6xl font-bold">
-                    <span className="text-zinc-400">about</span>
-                  </h2>
-                  <div className="space-y-4 text-zinc-300 leading-relaxed">
-                    <p>
-                      {personalInfo.aboutText}
-                    </p>
-                    <p>{personalInfo.techHeaderText}</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {technologies.map((tech, index) => (
-                        <motion.div
-                          key={tech}
-                          initial={{ opacity: 0, x: -20 }}
-                          whileInView={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.5, delay: index * 0.1 }}
-                          className="flex items-center text-zinc-300"
+            </div>
+          </div>
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-b from-transparent to-black z-10" />
+      </section>
+
+      {/* Main Projects Section */}
+      <section id="projects" className="min-h-screen relative py-20">
+        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-t from-transparent to-black z-10" />
+        
+        <div className="absolute inset-0 bg-black" />
+        
+        <div className="relative z-10 max-w-6xl mx-auto px-6">
+          <div>
+            <h2 className="text-5xl md:text-6xl font-bold mb-12 text-center" style={{ color: '#e5e2cf' }}>
+              Pet Projects
+            </h2>
+            
+            <div className="grid grid-cols-1 gap-6 mb-20 max-w-4xl mx-auto">
+              {mainProjects.map((project) => {
+                const description = projectDescriptions[project.title] || project.title;
+                
+                return (
+                  <div
+                    key={project.title}
+                    onClick={() => handleProjectClick(project.link)}
+                    className="group cursor-pointer relative aspect-video overflow-hidden rounded-lg hover:scale-[1.02] transition-all duration-300"
+                  >
+                    {/* Inset border wrapper */}
+                    <div className="absolute inset-0 pointer-events-none z-10" style={{
+                      boxShadow: 'inset 0 0 10px 8px rgba(0, 0, 0, 1)',
+                      borderRadius: 'inherit'
+                    }} />
+                    
+                    <Image 
+                      src={project.thumbnail} 
+                      alt={project.title}
+                      fill
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-start justify-end z-20 p-6">
+                      {description.split('\n').map((line, idx) => (
+                        <p 
+                          key={idx}
+                          className="text-white font-semibold text-base md:text-lg roboto-slab-regular leading-relaxed"
+                          style={{
+                            textShadow: '2px 2px 4px rgba(0, 0, 0, 0.8)',
+                            animation: `fadeInUp 0.4s ease-out ${idx * 0.15}s forwards`,
+                            opacity: 0
+                          }}
                         >
-                          <span className="text-blue-400 mr-3">▸</span>
-                          {tech}
-                        </motion.div>
+                          {line}
+                        </p>
                       ))}
                     </div>
-                    <p>
-                      {personalInfo.additionalAboutText}
-                    </p>
                   </div>
-                  <button 
-                    onClick={() => window.open(`mailto:${personalInfo.email}`)}
-                    className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors text-sm uppercase tracking-wider"
-                  >
-                    <Mail className="w-4 h-4" />
-                    Say hi!
-                  </button>
-                </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-b from-transparent to-black z-10" />
+      </section>
+
+      {/* Footer */}
+      <footer className="relative h-64 flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-black" />
+        
+        <div className="relative z-10 text-center px-6">
+          <div className="inline-block relative">
+            {/* Stamp/Badge effect behind text */}
+            <div className="absolute -inset-8 border-4 border-[#8B0000] opacity-20 animate-pulse" style={{ 
+              animationDuration: '4s',
+              transform: 'rotate(-2deg)'
+            }} />
+            <div className="absolute -inset-6 border-2 border-[#8B0000] opacity-30" style={{ 
+              transform: 'rotate(3deg)',
+              animation: 'spin 20s linear infinite'
+            }} />
+            
+            {/* Halftone dots pattern */}
+            <div className="absolute inset-0 opacity-10" style={{
+              backgroundImage: 'radial-gradient(circle, #8B0000 1px, transparent 1px)',
+              backgroundSize: '12px 12px',
+              backgroundPosition: '0 0, 6px 6px'
+            }} />
+            
+            <div className="relative">
+              {/* Top text - simplified */}
+              <div className="text-xl md:text-2xl roboto-slab-regular text-gray-300 mb-3">
+                Built & Designed by
+              </div>
+              
+              {/* Name with creative effects */}
+              <div className="relative inline-block group">
+                {/* Glowing underline that expands on hover */}
+                <div className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#8B0000] to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 blur-sm" />
+                <div className="absolute -bottom-2 left-0 right-0 h-[2px] bg-[#8B0000] scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
                 
-                <div className="flex justify-center lg:justify-end">
-                  <div className="w-80 h-96 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 overflow-hidden shadow-2xl">
-                    <CodingAnimation />
-                  </div>
-                </div>
-              </div>
-            </AnimatedContainer>
-          </div>
-        </section>
-
-        <section id="projects" className="py-20 px-6">
-          <div className="container mx-auto max-w-6xl">
-            <AnimatedContainer>
-              <div className="space-y-12">
-                <h2 className="text-4xl lg:text-6xl font-bold text-center">
-                  <span className="text-zinc-400">projects</span>
-                </h2>
+                {/* Scattered accent marks */}
+                <div className="absolute -top-4 -left-2 w-2 h-2 bg-[#8B0000] rotate-45 opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ animationDelay: '0.1s' }} />
+                <div className="absolute -top-3 -right-3 w-3 h-3 border-2 border-[#8B0000] rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ animationDelay: '0.2s' }} />
+                <div className="absolute -bottom-4 right-0 w-2 h-2 bg-[#8B0000] opacity-0 group-hover:opacity-100 transition-all duration-300" style={{ animationDelay: '0.15s' }} />
                 
-                <div className="max-w-2xl mx-auto">
-                  <ProjectCarousel projects={sliderProjects} />
-                </div>
-
-                <div className="mt-20">
-                  <ProjectGrid projects={smallProjects} />
-                </div>
+                <p className="text-4xl md:text-5xl font-bold roboto-slab-regular relative" style={{ 
+                  color: '#e5e2cf',
+                  textShadow: '0 0 20px rgba(139, 0, 0, 0.3), 4px 4px 0px rgba(0, 0, 0, 0.3)',
+                  letterSpacing: '0.05em'
+                }}>
+                  {/* Glitch effect layers */}
+                  <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{
+                    color: '#8B0000',
+                    animation: 'glitchShift 2.5s ease-in-out infinite',
+                    textShadow: 'none'
+                  }}>
+                    {personalInfo.name}
+                  </span>
+                  <span className="relative inline-block group-hover:scale-105 transition-transform duration-300">
+                    {personalInfo.name.split('').map((letter, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-block hover:scale-125 hover:-translate-y-2 transition-all duration-200"
+                        style={{
+                          transitionDelay: `${idx * 0.03}s`
+                        }}
+                      >
+                        {letter}
+                      </span>
+                    ))}
+                  </span>
+                </p>
               </div>
-            </AnimatedContainer>
+            </div>
+            
+            {/* Corner decorative elements */}
+            <div className="absolute -top-6 -left-6 w-12 h-12 border-t-4 border-l-4 border-[#8B0000] opacity-40" />
+            <div className="absolute -bottom-6 -right-6 w-12 h-12 border-b-4 border-r-4 border-[#8B0000] opacity-40" />
           </div>
-        </section>
-
-        <footer className="relative py-2 px-6 overflow-hidden">
-          <RetroGrid className="opacity-30" />
-          <div className="container mx-auto max-w-6xl text-center relative z-10">
-            <AnimatedContainer className="space-y-50">
-              <div className="text-zinc-500 pb-50 text-sm">
-                Built and designed by <span className="text-zinc-300 font-medium">{personalInfo.name}</span>
-              </div>
-            </AnimatedContainer>
-          </div>
-        </footer>
-      </div>
+        </div>
+        
+        {/* Animated scanline effect */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute inset-0 opacity-5" style={{
+            backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, #8B0000 2px, #8B0000 4px)',
+            animation: 'scanline 8s linear infinite'
+          }} />
+        </div>
+      </footer>
     </div>
   );
 }
