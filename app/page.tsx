@@ -8,8 +8,15 @@ interface Project {
   link: string;
 }
 
+const stripEnvPrefix = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('NEXT_PUBLIC_')) return value;
+  const idx = trimmed.indexOf('=');
+  return idx === -1 ? value : trimmed.slice(idx + 1).trim();
+};
+
 const parseSocialLinks = () => {
-  const env = process.env.NEXT_PUBLIC_SOCIAL_LINKS || '';
+  const env = stripEnvPrefix(process.env.NEXT_PUBLIC_SOCIAL_LINKS || '');
   const out = { github: '', linkedin: '', twitter: '', email: '' };
   if (!env) return out;
   env.split(',').forEach((item) => {
@@ -29,20 +36,16 @@ const parseSocialLinks = () => {
 };
 
 const getPersonalInfo = () => ({
-  name: process.env.NEXT_PUBLIC_DEVELOPER_NAME || 'Developer',
-  role:
-    process.env.NEXT_PUBLIC_DEVELOPER_DESC ||
-    '',
-  email: process.env.NEXT_PUBLIC_EMAIL || '',
-  aboutText:
-    process.env.NEXT_PUBLIC_ABOUT_TEXT ||
-    '',
-  aboutAside1: process.env.NEXT_PUBLIC_ABOUT_ASIDE_1 || '',
-  aboutAside2: process.env.NEXT_PUBLIC_ABOUT_ASIDE_2 || '',
+  name: stripEnvPrefix(process.env.NEXT_PUBLIC_DEVELOPER_NAME || 'Developer'),
+  role: stripEnvPrefix(process.env.NEXT_PUBLIC_DEVELOPER_DESC || ''),
+  email: stripEnvPrefix(process.env.NEXT_PUBLIC_EMAIL || ''),
+  aboutText: stripEnvPrefix(process.env.NEXT_PUBLIC_ABOUT_TEXT || ''),
+  aboutAside1: stripEnvPrefix(process.env.NEXT_PUBLIC_ABOUT_ASIDE_1 || ''),
+  aboutAside2: stripEnvPrefix(process.env.NEXT_PUBLIC_ABOUT_ASIDE_2 || ''),
 });
 
 const parseProjectDescriptions = (): Record<string, string> => {
-  const env = process.env.NEXT_PUBLIC_PROJECT_DESCRIPTIONS || '';
+  const env = stripEnvPrefix(process.env.NEXT_PUBLIC_PROJECT_DESCRIPTIONS || '');
   if (!env) return {};
   const out: Record<string, string> = {};
   env.split(';').forEach((item) => {
@@ -55,7 +58,7 @@ const parseProjectDescriptions = (): Record<string, string> => {
 };
 
 const parseProjects = (): Project[] => {
-  const env = process.env.NEXT_PUBLIC_PROJECTS || '';
+  const env = stripEnvPrefix(process.env.NEXT_PUBLIC_PROJECTS || '');
   if (!env) return [];
   return env
     .split(',')
@@ -95,7 +98,7 @@ const parseProjectMeta = (): Record<
   string,
   { year: string; stack: string[]; placeholder?: string }
 > => {
-  const env = process.env.NEXT_PUBLIC_PROJECT_META || '';
+  const env = stripEnvPrefix(process.env.NEXT_PUBLIC_PROJECT_META || '');
   if (!env) return {};
   const out: Record<string, { year: string; stack: string[]; placeholder?: string }> = {};
   env.split(';').forEach((row) => {
