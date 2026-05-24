@@ -200,10 +200,36 @@ const STYLES = `
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  overflow-y: visible;
   min-height: 100vh;
 }
 .shx-root *, .shx-root *::before, .shx-root *::after { box-sizing: border-box; }
 .shx-root ::selection { background: var(--accent); color: var(--fg); }
+
+/* Custom scrollbar */
+.shx-root::-webkit-scrollbar,
+html::-webkit-scrollbar {
+  width: 6px;
+}
+.shx-root::-webkit-scrollbar-track,
+html::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+.shx-root::-webkit-scrollbar-thumb,
+html::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 0px;
+}
+.shx-root::-webkit-scrollbar-thumb:hover,
+html::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-bright);
+}
+
+/* Firefox */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) var(--bg);
+}
 
 .shx-root #hero h1.hero-name,
 .shx-root #hero .role,
@@ -236,7 +262,7 @@ const STYLES = `
 .shx-root nav.top {
   position: fixed; top: 0; left: 0; right: 0;
   z-index: 50;
-  padding: 18px var(--pad);
+  padding: 12px var(--pad);
   display: flex; justify-content: space-between; align-items: center;
   backdrop-filter: blur(10px);
   background: linear-gradient(180deg, rgba(10,9,8,0.85), rgba(10,9,8,0));
@@ -246,8 +272,8 @@ const STYLES = `
 .shx-root nav.top.scrolled { border-bottom-color: var(--line); }
 .shx-root .nav-group { display: flex; align-items: center; gap: 6px; }
 .shx-root .nav-btn {
-  background: none; border: 0; cursor: pointer; padding: 10px;
-  width: 44px; height: 44px;
+  background: none; border: 0; cursor: pointer; padding: 8px;
+  width: 52px; height: 52px;
   display: grid; place-items: center;
   opacity: 0.55;
   transition: opacity .25s ease, transform .25s ease;
@@ -275,9 +301,15 @@ const STYLES = `
 .shx-root .tag::before { content: ""; width: 22px; height: 1px; background: var(--accent); }
 
 .shx-root section.hero {
-  min-height: 100vh; padding-top: 96px; padding-bottom: 80px;
+  min-height: 100svh;
+  padding-top: 80px;
+  padding-bottom: 48px;
+  height: auto;
+  overflow: visible;
   position: relative;
-  display: flex; flex-direction: column; justify-content: space-between;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 }
 .shx-root .hero-grid {
   display: grid;
@@ -288,7 +320,7 @@ const STYLES = `
 }
 .shx-root .hero-name {
   font-family: var(--serif);
-  font-size: clamp(72px, 16vw, 260px);
+  font-size: clamp(72px, 13.5vw, 260px);
   line-height: 0.88;
   letter-spacing: -0.04em;
   margin: 0;
@@ -301,6 +333,7 @@ const STYLES = `
   display: flex; flex-direction: column; align-items: flex-end; gap: 14px;
   text-align: right;
   padding-bottom: 12px;
+  align-self: end;
 }
 .shx-root .hero-side-late {
   opacity: 0;
@@ -371,6 +404,7 @@ const STYLES = `
 .shx-root .about-grid {
   display: grid; grid-template-columns: 220px 1fr 1fr; gap: 60px;
 }
+.shx-root .about-grid.no-aside { grid-template-columns: 220px 1fr; }
 .shx-root .about-grid .col-label { padding-top: 8px; }
 .shx-root .about-statement {
   font-family: var(--serif);
@@ -419,6 +453,14 @@ const STYLES = `
 .shx-root .proj-row:hover { padding-left: 24px; }
 .shx-root .proj-row:hover .proj-title { color: var(--accent-bright); }
 .shx-root .proj-row:hover .proj-arrow { transform: translate(6px, -6px); color: var(--accent-bright); }
+.shx-root .proj-row.manition:hover::before { transform: scaleY(0); }
+.shx-root .proj-row.manition:hover { padding-left: 8px; }
+.shx-root .proj-row.manition:hover .proj-title { color: var(--fg); }
+.shx-root .proj-row.manition:hover .proj-arrow { transform: none; color: var(--fg-dim); }
+.shx-root .proj-row.manition:hover::before { transform: scaleY(0); }
+.shx-root .proj-row.manition:hover { padding-left: 8px; }
+.shx-root .proj-row.manition:hover .proj-title { color: var(--fg); }
+.shx-root .proj-row.manition:hover .proj-arrow { transform: none; color: var(--fg-dim); }
 
 .shx-root .proj-num { font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em; color: var(--muted); }
 .shx-root .proj-title {
@@ -452,6 +494,40 @@ const STYLES = `
   color: var(--fg-dim);
   transition: transform .35s ease, color .25s ease;
   justify-self: end;
+}
+
+.shx-root .proj-row.manition { align-items: start; }
+.shx-root .proj-video {
+  grid-column: 1 / -1;
+  margin-top: 18px;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(12px);
+  overflow: hidden;
+  pointer-events: none;
+  transition: max-height .65s ease, opacity .4s ease, transform .5s ease;
+}
+.shx-root .proj-row.manition.expanded .proj-video {
+  max-height: 800px;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.shx-root .proj-video-frame {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(139,0,0,0.12);
+}
+.shx-root .proj-video-frame video {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  background: var(--bg);
+  display: block;
 }
 
 .shx-root #shx-preview {
@@ -495,19 +571,28 @@ const STYLES = `
   font-weight: 400;
 }
 .shx-root .sig em { color: var(--accent-bright); font-style: italic; }
-.shx-root .foot-meta { display: flex; flex-direction: column; gap: 8px; text-align: right; }
+.shx-root .foot-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+  align-items: center;
+}
 .shx-root .foot-link {
   font-family: var(--sans);
   font-weight: 400;
   font-size: 13px;
   color: var(--fg);
   text-decoration: none;
-  border-bottom: 1px solid var(--accent);
-  padding-bottom: 2px;
-  align-self: flex-end;
-  transition: transform .25s ease, color .25s ease;
+  border-bottom: 0;
+  padding-bottom: 0;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity .25s ease;
 }
-.shx-root .foot-link:hover { transform: translateX(-4px); color: var(--accent-bright); }
+.shx-root .foot-link:hover { opacity: 0.85; }
 
 .shx-root .reveal { opacity: 0; transform: translateY(18px); transition: opacity .9s ease, transform .9s cubic-bezier(.2,.7,.2,1); }
 .shx-root .reveal.in { opacity: 1; transform: none; }
@@ -632,41 +717,240 @@ const STYLES = `
   transform: scaleX(1);
 }
 
-.shx-root .proj-row { will-change: transform; }
-.shx-root .proj-view {
-  position: absolute;
-  right: 64px; top: 50%;
-  transform: translateY(-50%) translateX(10px);
-  font-family: var(--mono);
-  font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase;
-  color: var(--accent-bright);
-  opacity: 0;
-  transition: opacity .3s ease, transform .35s cubic-bezier(.2,.7,.2,1);
-  pointer-events: none;
-  display: flex; align-items: center; gap: 10px;
-}
-.shx-root .proj-view::before {
-  content: ""; width: 18px; height: 1px; background: var(--accent-bright);
-}
-.shx-root .proj-row:hover .proj-view {
-  opacity: 1;
-  transform: translateY(-50%) translateX(0);
-}
+.shx-root .proj-row { will-change: auto; }
 .shx-root .proj-title .scrambler { display: inline-block; will-change: contents; }
 
 .shx-root .magnet { transition: transform .35s cubic-bezier(.2,.85,.2,1); }
 
+@media (max-width: 1100px) {
+  .shx-root .hero-grid {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+  .shx-root .hero-side {
+    align-items: flex-start;
+    text-align: left;
+    padding-top: 24px;
+  }
+  .shx-root .hero-name { font-size: clamp(64px, 13vw, 220px); }
+}
+
 @media (max-width: 980px) {
   .shx-root .hero-grid { grid-template-columns: 1fr; }
   .shx-root .hero-side { align-items: flex-start; text-align: left; }
+  .shx-root .hero-name { font-size: clamp(60px, 14vw, 180px); }
   .shx-root .hero-footer { flex-direction: column; align-items: stretch; gap: 18px; }
   .shx-root .section-head { grid-template-columns: 1fr; gap: 18px; }
   .shx-root .about-grid { grid-template-columns: 1fr; gap: 32px; }
+  .shx-root .about-grid.no-aside { grid-template-columns: 1fr; }
   .shx-root .proj-row { grid-template-columns: 60px 1fr 28px; gap: 16px; }
   .shx-root .proj-desc, .shx-root .proj-stack { display: none; }
+  .shx-root .proj-row.manition.expanded .proj-video { max-height: 320px; }
   .shx-root footer.foot { grid-template-columns: 1fr; }
-  .shx-root .foot-meta { text-align: left; }
-  .shx-root .foot-link { align-self: flex-start; }
+  .shx-root .foot-meta { text-align: center; }
+  .shx-root .foot-link { align-self: center; }
+}
+
+@media (max-width: 720px) {
+  .shx-root nav.top { padding: 10px var(--pad); }
+  .shx-root .nav-btn { width: 40px; height: 40px; padding: 7px; }
+  .shx-root .hero-name { font-size: clamp(60px, 17vw, 130px); line-height: 0.9; }
+  .shx-root .proj-row { padding: 24px 6px; }
+  .shx-root .proj-title { font-size: clamp(30px, 9vw, 52px); }
+}
+
+@media (max-width: 560px) {
+  .shx-root section.hero {
+    padding-top: 60px;
+    padding-bottom: 32px;
+    justify-content: flex-end;
+  }
+  .shx-root .hero-name {
+    font-size: clamp(60px, 19vw, 110px);
+    line-height: 0.88;
+    letter-spacing: -0.03em;
+  }
+  .shx-root .hero-grid { gap: 14px; }
+  .shx-root .hero-side { padding-top: 8px; }
+  .shx-root .hero-side .role { font-size: 16px; }
+  .shx-root .hero-footer { margin-top: 24px; }
+  .shx-root .section-head h2 { font-size: clamp(36px, 9vw, 64px); }
+  .shx-root .proj-row {
+    grid-template-columns: 52px minmax(0, 1fr) 22px;
+    gap: 12px;
+    padding: 20px 4px;
+  }
+  .shx-root .proj-title {
+    min-width: 0;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+  .shx-root .proj-title .scrambler {
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .shx-root .proj-title .yr {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  .shx-root .proj-row.manition.expanded .proj-video { max-height: 240px; }
+}
+
+@media (max-width: 480px) {
+  .shx-root section.hero {
+    min-height: 100svh;
+    height: 100svh;
+    padding-top: 56px;
+    padding-bottom: 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  .shx-root .hero-grid {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-start;
+    gap: 16px;
+    flex: 0 0 auto;
+  }
+  .shx-root .hero-name {
+    font-size: clamp(64px, 21vw, 115px);
+    line-height: 0.86;
+    letter-spacing: -0.03em;
+  }
+  .shx-root .hero-side {
+    align-items: flex-end;
+    text-align: right;
+    width: 100%;
+    padding-top: 0;
+  }
+  .shx-root .hero-footer {
+    margin-top: 28px;
+    flex-shrink: 0;
+  }
+}
+
+.shx-root .proj-video-frame video {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  background: var(--bg);
+  display: block;
+}
+
+.shx-root .shx-video-wrap {
+  position: relative;
+  width: 100%;
+  background: var(--bg);
+}
+
+.shx-root .shx-video-controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, rgba(10,9,8,0) 0%, rgba(10,9,8,0.9) 70%);
+  border-top: 1px solid var(--line);
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition: opacity .25s ease, transform .25s ease;
+  z-index: 2;
+}
+
+.shx-root .shx-video-wrap:hover .shx-video-controls,
+.shx-root .shx-video-wrap:focus-within .shx-video-controls {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+@media (hover: none) {
+  .shx-root .shx-video-controls {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+}
+
+.shx-root .shx-vc-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 4px 0;
+  transition: color .2s ease;
+  flex-shrink: 0;
+}
+.shx-root .shx-vc-btn:hover { color: var(--accent-bright); }
+
+.shx-root .shx-vc-progress {
+  flex: 1;
+  height: 2px;
+  background: var(--line);
+  position: relative;
+  cursor: pointer;
+  border-radius: 1px;
+}
+.shx-root .shx-vc-progress-fill {
+  height: 100%;
+  background: var(--accent-bright);
+  border-radius: 1px;
+  width: 0%;
+  transition: width .1s linear;
+  box-shadow: 0 0 8px rgba(181,18,27,0.5);
+  pointer-events: none;
+}
+.shx-root .shx-vc-seek {
+  position: absolute;
+  inset: -6px 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+.shx-root .shx-vc-time {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  flex-shrink: 0;
+  min-width: 72px;
+  text-align: right;
+}
+.shx-root .shx-vc-vol {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 56px;
+  height: 2px;
+  background: var(--line);
+  border-radius: 1px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.shx-root .shx-vc-vol::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent-bright);
+  box-shadow: 0 0 6px rgba(181,18,27,0.5);
 }
 `;
 
@@ -675,10 +959,11 @@ export default function Home() {
   const socials = parseSocialLinks();
   const projects = parseProjects();
   const descriptions = parseProjectDescriptions();
+  const manitionVideoUrl = process.env.NEXT_PUBLIC_MANITION_VIDEO_URL || '';
 
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState<'hero' | 'about' | 'projects'>('hero');
-
+  const manitionRowRef = useRef<HTMLDivElement | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const previewImgRef = useRef<HTMLImageElement>(null);
   const target = useRef({ x: 0, y: 0 });
@@ -864,6 +1149,27 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    const el = manitionRowRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            el.classList.add('expanded');
+            io.disconnect();
+          }
+        }
+      },
+      { threshold: 0.2, rootMargin: '0px' }
+    );
+    const timer = setTimeout(() => io.observe(el), 800);
+    return () => {
+      clearTimeout(timer);
+      io.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
     const tick = () => {
       cur.current.x += (target.current.x - cur.current.x) * 0.18;
       cur.current.y += (target.current.y - cur.current.y) * 0.18;
@@ -908,6 +1214,20 @@ export default function Home() {
   };
   const magneticLeave = (e: React.MouseEvent<HTMLElement>) => {
     e.currentTarget.style.transform = '';
+  };
+
+  const updateManitionControls = (v: HTMLVideoElement) => {
+    const fill = document.getElementById('shx-vc-fill');
+    const time = document.getElementById('shx-vc-time');
+    const seek = document.getElementById('shx-vc-seek') as HTMLInputElement | null;
+    const duration = Number.isFinite(v.duration) ? v.duration : 0;
+    const pct = duration > 0 ? (v.currentTime / duration) * 100 : 0;
+    if (fill) fill.style.width = `${pct}%`;
+    if (seek) seek.value = `${pct}`;
+    if (time) {
+      const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+      time.textContent = `${fmt(v.currentTime)} / ${fmt(duration)}`;
+    }
   };
 
   return (
@@ -1072,17 +1392,19 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="about-grid">
+          <div className={`about-grid${info.aboutAside1 || info.aboutAside2 ? '' : ' no-aside'}`}>
             <div className="col-label">
               <span className="tag">Statement</span>
             </div>
 
             <p className="about-statement reveal">{renderEm(info.aboutText)}</p>
 
-            <div className="about-aside reveal d2">
-              {info.aboutAside1 ? <p>{info.aboutAside1}</p> : null}
-              {info.aboutAside2 ? <p>{info.aboutAside2}</p> : null}
-            </div>
+            {info.aboutAside1 || info.aboutAside2 ? (
+              <div className="about-aside reveal d2">
+                {info.aboutAside1 ? <p>{info.aboutAside1}</p> : null}
+                {info.aboutAside2 ? <p>{info.aboutAside2}</p> : null}
+              </div>
+            ) : null}
           </div>
         </section>
 
@@ -1098,24 +1420,14 @@ export default function Home() {
 
           <div className="proj-list">
             {projects.map((p, i) => {
+              const isManition = p.title === 'Manition';
               const num = String(i + 1).padStart(2, '0');
               const meta = PROJECT_META[p.title] || { year: '', stack: [], placeholder: undefined };
               const description = descriptions[p.title] || '';
               const delayClass = i < 3 ? '' : i === 3 ? ' d2' : i === 4 ? ' d3' : ' d4';
               const thumb = meta.placeholder ?? p.thumbnail;
-              return (
-                <a
-                  key={p.title}
-                  className={`proj-row reveal${delayClass}`}
-                  href={p.link}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    openExternal(p.link);
-                  }}
-                  onMouseEnter={() => onPreviewEnter(thumb)}
-                  onMouseMove={onPreviewMove}
-                  onMouseLeave={onPreviewLeave}
-                >
+              const rowContent = (
+                <>
                   <span className="proj-num">{num} /</span>
                   <span className="proj-title">
                     <span className="scrambler" data-text={p.title}>{p.title}</span>{' '}
@@ -1134,7 +1446,160 @@ export default function Home() {
                   >
                     ↗
                   </span>
-                  <span className="proj-view">View case</span>
+                  {isManition && manitionVideoUrl ? (
+                    <div className="proj-video">
+                      <div className="proj-video-frame">
+                        <div
+                          className="shx-video-wrap"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                          onPointerDown={(e) => {
+                            e.stopPropagation();
+                          }}
+                        >
+                          <video
+                            id="shx-manition-video"
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            style={{ width: '100%', height: 'auto', display: 'block', background: 'var(--bg)' }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                            }}
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                            }}
+                            onLoadedMetadata={(e) => updateManitionControls(e.currentTarget)}
+                            onTimeUpdate={(e) => {
+                              updateManitionControls(e.currentTarget);
+                            }}
+                          >
+                            <source src={manitionVideoUrl} type="video/mp4" />
+                          </video>
+                          <div
+                            className="shx-video-controls"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                            }}
+                          >
+                            <button
+                              className="shx-vc-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const v = document.getElementById('shx-manition-video') as HTMLVideoElement;
+                                if (v) v.paused ? v.play() : v.pause();
+                              }}
+                            >
+                              ▶ / ‖
+                            </button>
+                            <button
+                              className="shx-vc-btn"
+                              id="shx-vc-mute"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const v = document.getElementById('shx-manition-video') as HTMLVideoElement;
+                                const btn = document.getElementById('shx-vc-mute');
+                                if (!v || !btn) return;
+                                v.muted = !v.muted;
+                                btn.textContent = v.muted ? 'unmute' : 'mute';
+                              }}
+                            >
+                              unmute
+                            </button>
+                            <div className="shx-vc-progress">
+                              <div className="shx-vc-progress-fill" id="shx-vc-fill" />
+                              <input
+                                id="shx-vc-seek"
+                                className="shx-vc-seek"
+                                type="range"
+                                min={0}
+                                max={100}
+                                step={0.1}
+                                defaultValue={0}
+                                aria-label="Seek"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                }}
+                                onPointerDown={(e) => {
+                                  e.stopPropagation();
+                                }}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  const v = document.getElementById('shx-manition-video') as HTMLVideoElement;
+                                  if (!v || !Number.isFinite(v.duration)) return;
+                                  const pct = parseFloat(e.currentTarget.value) / 100;
+                                  v.currentTime = pct * v.duration;
+                                  updateManitionControls(v);
+                                }}
+                              />
+                            </div>
+                            <span className="shx-vc-time" id="shx-vc-time">0:00 / 0:00</span>
+                            <input
+                              type="range" min={0} max={1} step={0.05} defaultValue={0}
+                              className="shx-vc-vol"
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                const v = document.getElementById('shx-manition-video') as HTMLVideoElement;
+                                const btn = document.getElementById('shx-vc-mute');
+                                if (v) {
+                                  const vol = parseFloat(e.target.value);
+                                  v.muted = vol === 0;
+                                  v.volume = vol;
+                                  if (btn) btn.textContent = v.muted ? 'unmute' : 'mute';
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                </>
+              );
+
+              if (isManition) {
+                return (
+                  <div
+                    key={p.title}
+                    ref={manitionRowRef}
+                    className={`proj-row reveal${delayClass} manition`}
+                    role="link"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      const target = e.target as HTMLElement;
+                      if (target.closest('.shx-video-wrap')) return;
+                      openExternal(p.link);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openExternal(p.link);
+                      }
+                    }}
+                    onMouseEnter={onPreviewLeave}
+                    onMouseLeave={onPreviewLeave}
+                  >
+                    {rowContent}
+                  </div>
+                );
+              }
+
+              return (
+                <a
+                  key={p.title}
+                  className={`proj-row reveal${delayClass}`}
+                  href={p.link}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    openExternal(p.link);
+                  }}
+                  onMouseEnter={() => onPreviewEnter(thumb)}
+                  onMouseMove={onPreviewMove}
+                  onMouseLeave={onPreviewLeave}
+                >
+                  {rowContent}
                 </a>
               );
             })}
@@ -1161,8 +1626,9 @@ export default function Home() {
             <a
               className="foot-link"
               href={info.email ? (info.email.startsWith('mailto:') ? info.email : `mailto:${info.email}`) : '#'}
+              aria-label="Email"
             >
-              {info.email.replace(/^mailto:/, '')} ↗
+              <Image src="/mail.png" alt="Email" width={40} height={40} />
             </a>
             <span className="mono-sm" style={{ marginTop: 18 }}>
               Crafted by {info.name}
