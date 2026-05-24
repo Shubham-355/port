@@ -776,21 +776,25 @@ html {
   .shx-root .hero-footer { margin-top: 24px; }
   .shx-root .section-head h2 { font-size: clamp(36px, 9vw, 64px); }
   .shx-root .proj-row {
-    grid-template-columns: 52px minmax(0, 1fr) 22px;
-    gap: 12px;
+    grid-template-columns: 44px minmax(0, 1fr) 20px;
+    gap: 10px;
     padding: 20px 4px;
+  }
+  .shx-root .proj-num {
+    font-size: 10px;
+    letter-spacing: 0.14em;
   }
   .shx-root .proj-title {
     min-width: 0;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: nowrap;
+    font-size: clamp(26px, 7.6vw, 42px);
+    letter-spacing: -0.02em;
   }
   .shx-root .proj-title .scrambler {
     flex: 1 1 auto;
     min-width: 0;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
   .shx-root .proj-title .yr {
     flex: 0 0 auto;
@@ -1489,7 +1493,13 @@ export default function Home() {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const v = document.getElementById('shx-manition-video') as HTMLVideoElement;
-                                if (v) v.paused ? v.play() : v.pause();
+                                if (v) {
+                                  if (v.paused) {
+                                    void v.play();
+                                  } else {
+                                    v.pause();
+                                  }
+                                }
                               }}
                             >
                               ▶ / ‖
