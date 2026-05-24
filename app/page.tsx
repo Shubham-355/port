@@ -1016,7 +1016,9 @@ export default function Home() {
             <h1 className="hero-name" id="shx-hero-name">
               <span className="splitchar line">
                 {[...`${info.name},`].map((ch, i) => (
-                  <span key={i}>{ch === ' ' ? ' ' : ch}</span>
+                  <span key={i} className={ch === ',' ? 'ital' : undefined}>
+                    {ch === ' ' ? ' ' : ch}
+                  </span>
                 ))}
               </span>
               <br />
