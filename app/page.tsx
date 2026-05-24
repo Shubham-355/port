@@ -1169,9 +1169,8 @@ export default function Home() {
       },
       { threshold: 0.2, rootMargin: '0px' }
     );
-    const timer = setTimeout(() => io.observe(el), 800);
+    io.observe(el);
     return () => {
-      clearTimeout(timer);
       io.disconnect();
     };
   }, []);
